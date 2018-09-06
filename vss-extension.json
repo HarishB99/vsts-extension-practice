@@ -1,8 +1,8 @@
 {
     "manifestVersion": 1,
     "id": "second-sample-extension",
-    "version": "0.0.0.1",
-    "name": "My second sample extension",
+    "version": "0.0.0.3",
+    "name": "Work Hub",
     "description": "A sample Visual Studio Services extension.",
     "publisher": "HarishB",
     "targets": [
