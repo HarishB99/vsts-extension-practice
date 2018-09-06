@@ -1,8 +1,8 @@
 {
     "manifestVersion": 1,
-    "id": "second-sample-extension",
-    "version": "0.0.0.5",
-    "name": "Work Hub",
+    "id": "build-release-task",
+    "version": "0.0.0.4",
+    "name": "Harish Build and Release Tools",
     "description": "A sample Visual Studio Services extension.",
     "publisher": "HarishB",
     "targets": [
@@ -11,53 +11,23 @@
         }
     ],
     "categories": [
-        "Collaborate",
-        "Integrate",
-        "Test"
+        "Build and release"
     ],
     "contributions": [
         {
-            "id": "HarishB.HelloWorld",
-            "type": "ms.vss-web.hub",
-            "description": "Adds a 'Hello' hub to the Work hub group.",
+            "id": "custom-build-release-task",
+            "type": "ms.vss-distributed-task.task",
             "targets": [
-                "ms.vss-work-web.work-hub-group"
+                "ms.vss-distributed-task.tasks"
             ],
             "properties": {
-                "name": "Hello",
-                "order": 99,
-                "uri": "hello-world.html"
-            }
-        },
-        {
-            "id": "HarishB.myAction",
-            "type": "ms.vss-web.action",
-            "description": "Run in Hello hub action",
-            "targets": [
-                "ms.vss-work-web.work-item-query-menu"
-            ],
-            "properties": {
-                "text": "Run in Hello hub",
-                "title": "Run in Hello hub",
-                "groupId": "actions",
-                "uri": "action.html"
+                "name": "buildAndReleaseTask"
             }
         }
     ],
-    "scopes": [
-        "vso.work"
-    ],
     "files": [
         {
-            "path": "hello-world.html", "addressable": true
-        },
-        {
-            "path": "node_modules/vss-web-extension-sdk/lib",
-            "addressable": true,
-            "packagePath": "lib"
-        },
-        {
-            "path": "action.html", "addressable": true
+            "path": "buildAndReleaseTask"
         }
     ]
 }
