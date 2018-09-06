@@ -1,9 +1,9 @@
 {
     "manifestVersion": 1,
-    "id": "vsts-extensions-myExtensions",
-    "version": "0.0.1.1",
-    "name": "My First Set of Widgets",
-    "description": "Samples containing different widgets extending dashboards.",
+    "id": "vsts-extensions-myBacklogTabs",
+    "version": "0.0.0.1",
+    "name": "Backlog Tabs",
+    "description": "Sample backlog tab.",
     "publisher": "HarishB",
     "targets": [
         {
@@ -20,35 +20,17 @@
     ],
     "contributions": [
         {
-            "id": "HelloWorldWidget3",
-            "type": "ms.vss-dashboards-web.widget",
+            "id": "HarishB.HelloWorld.Backlog.Tabs",
+            "type": "ms.vss-web.tab",
+            "description": "Adds a 'Hello' tab to the Product and Iteration backlog tabs.",
             "targets": [
-                "ms.vss-dashboards-web.widget-catalog",
-                "HarishB.vsts-extensions-myExtensions.HelloWorldWidget.Configuration"
+                "ms.vss-work-web.product-backlog-tabs",
+                "ms.vss-work-web.iteration-backlog-tabs"
             ],
             "properties": {
-                "name": "Hello World Widget",
-                "description": "My first widget",
-                "catalogIconUrl": "img/logo.png",
-                "previewImageUrl": "img/logo3.png",                            
+                "name": "Hello",
                 "uri": "hello-world.html",
-                "supportedSizes": [
-                     {
-                            "rowSpan": 1,
-                            "columnSpan": 2
-                        }
-                    ],
-                "supportedScopes": ["project_team"]
-            }
-        },
-        {
-            "id": "HelloWorldWidget.Configuration",
-            "type": "ms.vss-dashboards-web.widget-configuration",
-            "targets": [ "ms.vss-dashboards-web.widget-configuration" ],
-            "properties": {
-                "name": "HelloWorldWidget Configuration",
-                "description": "Configures HelloWorldWidget",
-                "uri": "configuration.html"
+                "registeredObjectId": "backlogTabObject"
             }
         }
     ],
