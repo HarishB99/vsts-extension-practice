@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-extensions-myExtensions",
-    "version": "0.0.1",
+    "version": "0.0.1.1",
     "name": "My First Set of Widgets",
     "description": "Samples containing different widgets extending dashboards.",
     "publisher": "HarishB",
@@ -23,7 +23,8 @@
             "id": "HelloWorldWidget3",
             "type": "ms.vss-dashboards-web.widget",
             "targets": [
-                "ms.vss-dashboards-web.widget-catalog"
+                "ms.vss-dashboards-web.widget-catalog",
+                "HarishB.vsts-extensions-myExtensions.HelloWorldWidget.Configuration"
             ],
             "properties": {
                 "name": "Hello World Widget",
@@ -38,6 +39,16 @@
                         }
                     ],
                 "supportedScopes": ["project_team"]
+            }
+        },
+        {
+            "id": "HelloWorldWidget.Configuration",
+            "type": "ms.vss-dashboards-web.widget-configuration",
+            "targets": [ "ms.vss-dashboards-web.widget-configuration" ],
+            "properties": {
+                "name": "HelloWorldWidget Configuration",
+                "description": "Configures HelloWorldWidget",
+                "uri": "configuration.html"
             }
         }
     ],
