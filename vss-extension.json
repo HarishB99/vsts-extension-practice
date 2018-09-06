@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-extensions-myExtensions",
-    "version": "0.0.0.1",
+    "version": "0.0.0.2",
     "name": "My First Set of Widgets",
     "description": "Samples containing different widgets extending dashboards.",
     "publisher": "HarishB",
@@ -14,6 +14,9 @@
         "Collaborate",
         "Integrate",
         "Test"
+    ],
+    "scopes": [
+        "vso.work"
     ],
     "contributions": [
         {
