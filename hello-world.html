@@ -14,12 +14,20 @@
 
         VSS.require(["TFS/Dashboards/WidgetHelpers", "TFS/WorkItemTracking/RestClient"], function (WidgetHelpers, TFS_Wit_WebApi) {
             WidgetHelpers.IncludeWidgetStyles();
-            VSS.register("HelloWorldWidget", function () { 
+            VSS.register("HelloWorldWidget3", function () { 
                 var projectId = VSS.getWebContext().project.id;
 
                 var getQueryInfo = function (widgetSettings) {
+                    var settings = JSON.parse(widgetSettings.customSettings.data);
+                    if (!settings || !settings.queryPath) {
+                        var $container = $('#query-info-container');
+                        $container.empty();
+                        $container.text("Sorry nothing to show, please configure a query path.");
+
+                        return WidgetHelpers.WidgetStatusHelper.Success();
+                    }
                     // Get a WIT client to make REST calls to VSTS
-                    return TFS_Wit_WebApi.getClient().getQuery(projectId, "Shared Queries/Feedback")
+                    return TFS_Wit_WebApi.getClient().getQuery(projectId, settings.queryPath)
                         .then(function (query) {
                             // Create a list with query details                                
                             var $list = $('<ul>');                                
@@ -44,6 +52,9 @@
                         var $title = $('h2.title');
                         $title.text('Hello World');
 
+                        return getQueryInfo(widgetSettings);
+                    },
+                    reload: function (widgetSettings) {
                         return getQueryInfo(widgetSettings);
                     }
                 }

@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "vsts-extensions-myExtensions",
-    "version": "0.0.0.2",
+    "version": "0.0.1",
     "name": "My First Set of Widgets",
     "description": "Samples containing different widgets extending dashboards.",
     "publisher": "HarishB",
@@ -20,7 +20,7 @@
     ],
     "contributions": [
         {
-            "id": "HelloWorldWidget",
+            "id": "HelloWorldWidget3",
             "type": "ms.vss-dashboards-web.widget",
             "targets": [
                 "ms.vss-dashboards-web.widget-catalog"
@@ -29,7 +29,7 @@
                 "name": "Hello World Widget",
                 "description": "My first widget",
                 "catalogIconUrl": "img/logo.png",
-                "previewImageUrl": "img/logo.png",                            
+                "previewImageUrl": "img/logo3.png",                            
                 "uri": "hello-world.html",
                 "supportedSizes": [
                      {
@@ -44,6 +44,9 @@
     "files": [
         {
             "path": "hello-world.html", "addressable": true
+        },
+        {
+            "path": "configuration.html", "addressable": true
         },
         {
             "path": "img", "addressable": true
