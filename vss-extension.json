@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "second-sample-extension",
-    "version": "0.0.0.3",
+    "version": "0.0.0.5",
     "name": "Work Hub",
     "description": "A sample Visual Studio Services extension.",
     "publisher": "HarishB",
@@ -28,6 +28,20 @@
                 "order": 99,
                 "uri": "hello-world.html"
             }
+        },
+        {
+            "id": "HarishB.myAction",
+            "type": "ms.vss-web.action",
+            "description": "Run in Hello hub action",
+            "targets": [
+                "ms.vss-work-web.work-item-query-menu"
+            ],
+            "properties": {
+                "text": "Run in Hello hub",
+                "title": "Run in Hello hub",
+                "groupId": "actions",
+                "uri": "action.html"
+            }
         }
     ],
     "scopes": [
@@ -41,6 +55,9 @@
             "path": "node_modules/vss-web-extension-sdk/lib",
             "addressable": true,
             "packagePath": "lib"
+        },
+        {
+            "path": "action.html", "addressable": true
         }
     ]
 }
