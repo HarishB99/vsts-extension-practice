@@ -1,9 +1,9 @@
 {
     "manifestVersion": 1,
-    "id": "vsts-extensions-myBacklogTabs",
-    "version": "0.0.0.1",
-    "name": "Backlog Tabs",
-    "description": "Sample backlog tab.",
+    "id": "vsts-extensions-myBacklogPanels",
+    "version": "0.0.0.4",
+    "name": "Backlog Panel",
+    "description": "Sample backlog panel.",
     "publisher": "HarishB",
     "targets": [
         {
@@ -20,17 +20,19 @@
     ],
     "contributions": [
         {
-            "id": "HarishB.HelloWorld.Backlog.Tabs",
-            "type": "ms.vss-web.tab",
-            "description": "Adds a 'Hello' tab to the Product and Iteration backlog tabs.",
+            "id": "Fabrikam.HelloWorld.Backlogs.Panel",
+            "type": "ms.vss-work-web.backlog-panel",
+            "description": "Adds a 'Hello' panel to Product and Iteration backlog pages.",
             "targets": [
-                "ms.vss-work-web.product-backlog-tabs",
-                "ms.vss-work-web.iteration-backlog-tabs"
+                "ms.vss-work-web.requirement-backlog-toolpane",
+                "ms.vss-work-web.portfolio-backlog-toolpane",
+                "ms.vss-work-web.iteration-backlog-toolpane"
             ],
             "properties": {
-                "name": "Hello",
+                "title": "Hello Panel Pane",
+                "name": "Hello Panel",
                 "uri": "hello-world.html",
-                "registeredObjectId": "backlogTabObject"
+                "registeredObjectId": "backlogPanelObject"
             }
         }
     ],

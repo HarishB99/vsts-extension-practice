@@ -11,9 +11,9 @@
         <script type="text/javascript">VSS.init();</script>
         <h1>Hello World</h1>
         <script type="text/javascript">
-            VSS.register("backlogTabObject", {
+            VSS.register("backlogPanelObject", {
                 pageTitle: function(state) {
-                    return "Hello Tab";
+                    return "Hello Panel";
                 },
                 updateContext: function(tabContext) {                            
                 },
@@ -22,6 +22,8 @@
                 },
                 isDisabled: function(state) {
                     return false;
+                },
+                workItemSelectionChanged: function(selectedWorkItems) {
                 }
             });
             VSS.notifyLoadSucceeded();
