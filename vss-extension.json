@@ -10,6 +10,11 @@
             "id": "Microsoft.VisualStudio.Services"
         }
     ],
+    "categories": [
+        "Collaborate",
+        "Integrate",
+        "Test"
+    ],
     "contributions": [
         {
             "id": "HarishB.HelloWorld",
