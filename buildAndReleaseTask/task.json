@@ -11,9 +11,9 @@
     ],
     "author": "Harish S/O Balamurugan",
     "version": {
-        "Major": 0,
+        "Major": 1,
         "Minor": 0,
-        "Patch": 4
+        "Patch": 1
     },
     "instanceNameFormat": "Echo $(samplestring)",
     "groups": [
@@ -52,7 +52,7 @@
     ],
     "execution": {
         "Node": {
-            "target": "index.js"
+            "target": "index.js $(samplestring)"
         }
     }
 }

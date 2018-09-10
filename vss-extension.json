@@ -1,9 +1,9 @@
 {
     "manifestVersion": 1,
-    "id": "vsts-extensions-myBacklogPanels",
-    "version": "0.0.0.4",
-    "name": "Backlog Panel",
-    "description": "Sample backlog panel.",
+    "id": "build-release-task",
+    "version": "0.0.0.7",
+    "name": "Harish Build and Release Tools",
+    "description": "A sample Visual Studio Services extension.",
     "publisher": "HarishB",
     "targets": [
         {
@@ -11,45 +11,23 @@
         }
     ],
     "categories": [
-        "Collaborate",
-        "Integrate",
-        "Test"
-    ],
-    "scopes": [
-        "vso.work"
+        "Build and release"
     ],
     "contributions": [
         {
-            "id": "Fabrikam.HelloWorld.Backlogs.Panel",
-            "type": "ms.vss-work-web.backlog-panel",
-            "description": "Adds a 'Hello' panel to Product and Iteration backlog pages.",
+            "id": "custom-build-release-task",
+            "type": "ms.vss-distributed-task.task",
             "targets": [
-                "ms.vss-work-web.requirement-backlog-toolpane",
-                "ms.vss-work-web.portfolio-backlog-toolpane",
-                "ms.vss-work-web.iteration-backlog-toolpane"
+                "ms.vss-distributed-task.tasks"
             ],
             "properties": {
-                "title": "Hello Panel Pane",
-                "name": "Hello Panel",
-                "uri": "hello-world.html",
-                "registeredObjectId": "backlogPanelObject"
+                "name": "buildAndReleaseTask"
             }
         }
     ],
     "files": [
         {
-            "path": "hello-world.html", "addressable": true
-        },
-        {
-            "path": "configuration.html", "addressable": true
-        },
-        {
-            "path": "img", "addressable": true
-        },
-        {
-            "path": "node_modules/vss-web-extension-sdk/lib",
-            "addressable": true,
-            "packagePath": "lib"
+            "path": "buildAndReleaseTask"
         }
     ]
 }

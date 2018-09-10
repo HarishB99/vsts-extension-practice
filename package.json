@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node_modules/.bin/tfx extension create"
+    "build": "node_modules/.bin/tfx extension create",
+    "version": "del HarishB.build-release-task-*.vsix",
+    "postversion": "node_modules/.bin/tfx extension create --rev-version"
   },
   "keywords": [],
   "author": "",
