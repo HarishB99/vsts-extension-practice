@@ -1,8 +1,8 @@
 {
-    "id": "b4d4a103-9383-413e-b5b5-5b8056caaabf",
-    "name": "build_release_extension",
-    "friendlyName": "Sample Build/Release Extension",
-    "description": "A sample extension to see how VSTS extensions can be used in build and release pipelines",
+    "id": "04195a5b-1883-4f35-81fc-a4c80b0876f0",
+    "name": "harish_release_extension",
+    "friendlyName": "Harish Release Tools",
+    "description": "A release task that can be added to a release pipeline.",
     "helpMarkDown": "",
     "category": "Utility",
     "visibility": [
@@ -11,11 +11,11 @@
     ],
     "author": "Harish S/O Balamurugan",
     "version": {
-        "Major": 1,
+        "Major": 0,
         "Minor": 0,
-        "Patch": 1
+        "Patch": 7
     },
-    "instanceNameFormat": "Echo $(samplestring)",
+    "instanceNameFormat": "Release Task",
     "groups": [
         {
             "name": "advanced",
@@ -29,8 +29,9 @@
             "type": "filePath",
             "label": "Sample Path",
             "defaultValue": "",
-            "required": true,
-            "helpMarkDown": "A sample path which is relative to root of repo if empty"
+            "required": false,
+            "helpMarkDown": "A sample path which is relative to root of repo if empty",
+            "groupName": "advanced"
         },
         {
             "name": "samplestring",
@@ -52,7 +53,7 @@
     ],
     "execution": {
         "Node": {
-            "target": "index.js $(samplestring)"
+            "target": "index.js"
         }
     }
 }

@@ -1,9 +1,9 @@
 {
     "manifestVersion": 1,
-    "id": "build-release-task",
+    "id": "harish-release-task",
     "version": "0.0.0.7",
-    "name": "Harish Build and Release Tools",
-    "description": "A sample Visual Studio Services extension.",
+    "name": "Harish Release Tools",
+    "description": "A Visual Studio Services release task to set primary and secondary approvers, so that secondary approvers can approve a release when primary approvers aren't able to do so.",
     "publisher": "HarishB",
     "targets": [
         {
@@ -15,7 +15,7 @@
     ],
     "contributions": [
         {
-            "id": "custom-build-release-task",
+            "id": "harish-approval-release-task",
             "type": "ms.vss-distributed-task.task",
             "targets": [
                 "ms.vss-distributed-task.tasks"
