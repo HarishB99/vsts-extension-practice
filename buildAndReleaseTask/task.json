@@ -13,7 +13,7 @@
     "version": {
         "Major": 0,
         "Minor": 0,
-        "Patch": 7
+        "Patch": 9
     },
     "instanceNameFormat": "Release Task",
     "groups": [
@@ -21,34 +21,30 @@
             "name": "advanced",
             "displayName": "Advanced",
             "isExpanded": false
+        },
+        {
+            "name": "extra",
+            "displayName": "Extra Options",
+            "isExpanded": true
         }
     ],
     "inputs": [
-        {
-            "name": "samplepathinput",
-            "type": "filePath",
-            "label": "Sample Path",
-            "defaultValue": "",
-            "required": false,
-            "helpMarkDown": "A sample path which is relative to root of repo if empty",
-            "groupName": "advanced"
-        },
         {
             "name": "samplestring",
             "type": "string",
             "label": "Sample String",
             "defaultValue": "",
-            "required": false,
+            "required": true,
             "helpMarkDown": "A sample string"
         },
         {
-            "name": "samplebool",
-            "type": "boolean",
-            "label": "Sample Boolean",
-            "defaultValue": "false",
-            "required": false,
-            "helpMarkDown": "If this is true, this task will fail if any errors are written to the StandardError stream.",
-            "groupName": "advanced"
+            "name": "user",
+            "type": "string",
+            "label": "User",
+            "defaultValue": "",
+            "required": true,
+            "helpMarkDown": "A sample user name",
+            "groupName": "extra"
         }
     ],
     "execution": {

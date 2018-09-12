@@ -1,3 +1,7 @@
+console.log('[i] Communicating with VSTS REST endpoint: Started');
+console.log(process.env);
+console.log('[+] Communicating with VSTS REST endpoint: Complete');
+
 console.log('[i] Printing out process arguments: Started');
 console.log();
 process.argv.forEach((value, index) => {
