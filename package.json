@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "del HarishB.harish-release-task-*.vsix",
-    "postbuild": "node_modules/.bin/tfx extension create",
-    "version": "del HarishB.harish-release-task-*.vsix",
-    "postversion": "node_modules/.bin/tfx extension create --rev-version"
+    "prebuild": "del HarishB.harish-release-task-*.vsix",
+    "build": "node_modules/.bin/tfx extension create",
+    "preversion": "del HarishB.harish-release-task-*.vsix",
+    "version": "node_modules/.bin/tfx extension create --rev-version"
   },
   "keywords": [],
   "author": "",
