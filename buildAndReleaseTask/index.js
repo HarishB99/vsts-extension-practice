@@ -1,6 +1,8 @@
 const task = require('vsts-task-lib/task');
 const http = require('http');
-const https = require('https');
+// const https = require('https');
+const https = require('follow-redirects').https;
+const request = require('request');
 
 try {
     console.log();
@@ -29,7 +31,10 @@ try {
     //     console.log();
     //     console.log('[+] Executing task: Completed');
     // });
-    https.get(url, (response) => {
+    request.post(url, {
+        followAllRedirects: true
+    })
+    .on('response', response => {
         console.log('[i] statusCode: ', response.statusCode);
         console.log('[i] headers: ', response.headers);
         
@@ -43,6 +48,20 @@ try {
         console.log(`[-] Sending request to ${url}: Failure`);
         console.error(`Reason: ${e}`);
     });
+    // https.get(url, (response) => {
+    //     console.log('[i] statusCode: ', response.statusCode);
+    //     console.log('[i] headers: ', response.headers);
+        
+    //     response.on('data', (d) => {
+    //         process.stdout.write(d);
+    //     });
+    //     console.log(`[+] Sending request to ${url}: Complete`);
+    //     console.log();
+    //     console.log('[+] Executing task: Completed');
+    // }).on('error', (e) => {
+    //     console.log(`[-] Sending request to ${url}: Failure`);
+    //     console.error(`Reason: ${e}`);
+    // });
     console.log();
 } catch (error) {
     console.log();

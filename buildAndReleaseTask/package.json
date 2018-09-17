@@ -11,6 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "colors": "^1.3.2",
+    "follow-redirects": "^1.5.8",
+    "request": "^2.88.0",
     "vsts-task-lib": "^2.6.0"
   },
   "private": true
