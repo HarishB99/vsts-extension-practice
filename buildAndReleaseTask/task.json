@@ -13,8 +13,13 @@
     "version": {
         "Major": 0,
         "Minor": 3,
-        "Patch": 3
+        "Patch": 9
     },
+    "runsOn": [
+        "Agent",
+        "Server",
+        "ServerGate"
+    ],
     "instanceNameFormat": "Release Task",
     "groups": [
         {
