@@ -12,13 +12,12 @@
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 0,
-        "Minor": 3,
-        "Patch": 9
+        "Minor": 4,
+        "Patch": 0
     },
     "runsOn": [
         "Agent",
-        "Server",
-        "ServerGate"
+        "Server"
     ],
     "instanceNameFormat": "Release Task",
     "groups": [
