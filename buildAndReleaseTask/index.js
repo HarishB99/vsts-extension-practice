@@ -30,14 +30,13 @@ try {
         // const releaseDefinition = arr[1];
         // console.log(`releases: ${JSON.stringify(releases)}`);
         // console.log(`releases definitions: ${JSON.stringify(releaseDefinition)}`);
-        releases.forEach(release => {
+        // releases.forEach(release => {
             // console.log(`release definition: ${release.createdOn.toDateString()}`);
             // console.log(`release definition: ${release.releaseDefinition.id}`);
             // console.log(`release id: ${release.id}`);
-            console.log(`Post deploy approvals: ${definition.environments[0].postDeployApprovals}`);
-            console.log(`Pre deploy approvals${definition.environments[0].preDeployApprovals}`);
-        });
-        
+        // });
+        console.log(`Post deploy approvals: ${JSON.stringify(definition.environments[0].postDeployApprovals)}`);
+        console.log(`Pre deploy approvals: ${JSON.stringify(definition.environments[0].preDeployApprovals)}`);
     }).catch(error => {
         console.error(`error: ${error}`);
     });
