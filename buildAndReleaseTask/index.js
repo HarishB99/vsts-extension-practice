@@ -1,10 +1,7 @@
 const task = require('vsts-task-lib/task');
 const http = require('http');
-// const https = require('https');
 const https = require('follow-redirects').https;
 const request = require('request');
-const vsts = require('azure-devops-node-api/CoreApi');
-// const release = require('azure-devops-node-api/ReleaseApi').ReleaseApi;
 const azure_devops_api = require('azure-devops-node-api');
 
 try {
@@ -29,15 +26,20 @@ try {
     console.log();
     connection.getReleaseApi()
     .then(api => {
-        return api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID);
-    }).then(definition => {
+        return Promise.all([api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID), api.getApprovals(process.env.SYSTEM_TEAMPROJECT)]);
+    }).then(arr => {
+        const definition = arr[0];
+        const approvals = arr[1];
         console.log(`[i] Release definition: ${JSON.stringify(definition)}`);
         console.log(`[i] Post deploy approvals: ${JSON.stringify(definition.environments[0].postDeployApprovals)}`);
         console.log(`[i] Pre deploy approvals: ${JSON.stringify(definition.environments[0].preDeployApprovals)}`);
         console.log();
+        console.log(`[i] Approvals List: ${JSON.stringify(approvals)}`);
+        console.log();
         console.log('[+] Get details from REST endpoint: Complete');
         console.log();
         console.log('[+] Executing task: Complete');
+        
     }).catch(error => {
         console.log('[-] Get details from REST endpoint: Failure');
         console.error(`Reason: ${error}`);
