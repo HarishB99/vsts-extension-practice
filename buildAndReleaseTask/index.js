@@ -22,55 +22,38 @@ try {
     let authHandler = azure_devops_api.getBearerHandler(
         task.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
     let connection = new azure_devops_api.WebApi(process.env.SYSTEM_TEAMFOUNDATIONSERVERURI, authHandler);
-    console.log('[i] Get details from REST endpoint: Started');
+    console.log('[i] Update approvals: Started');
     console.log();
-    connection.getReleaseApi().then(api => {
-        return Promise.all([
-            api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID),
-            connection.getReleaseApi()
-        ]);
-    }).then(results => {
-        const definition = results[0];
-        console.log(`[i] Release definition: ${JSON.stringify(definition)}`);
-        console.log(`[i] Post deploy approvals: ${JSON.stringify(definition.environments[0].postDeployApprovals)}`);
-        console.log(`[i] Pre deploy approvals: ${JSON.stringify(definition.environments[0].preDeployApprovals)}`);
-        console.log();
-        // console.log(`[i] Approvals List: ${JSON.stringify(approvals)}`);
-        console.log();
-        console.log('[+] Get details from REST endpoint: Complete');
-        console.log();
-        console.log('[+] Executing task: Complete');
-        // const preApprovals = definition.environments[0].preDeployApprovals;
-        const postApproval = definition.environments[0].postDeployApprovals;
-        postApproval.approvals[0].isAutomated = false;
-        postApproval.approvals[0].approver = {
-            id: primary_approver
-        };
-
-        const secondApprovalId = parseInt(postApproval.approvals[0].id) + 1;
-
-        postApproval.approvals.push({
-            rank: 1,
-            isAutomated: false,
+    connection.getReleaseApi()
+    .then(api => {
+        return api.updateReleaseApprovals([{
+            approvalType: 'postDeploy',
             approver: {
-                id: secondary_approver
+                id: primary_approver
             },
-            id: secondApprovalId,
-            isNotificationOn: true
-        });
-
-        definition.environments[0].postDeployApprovals = postApproval;
-
-        const secondApi = results[1];
-        return secondApi.updateReleaseDefinition(definition, process.env.SYSTEM_TEAMPROJECT);
-    }).then(updatedDefinition => {
-        console.log(`Updated Definition: ${updatedDefinition}`);
+            isAutomated: false,
+            status: 'reassigned'
+        }], process.env.SYSTEM_TEAMPROJECT);
+    }).then(approvals => {
+        console.log(`Updated Approvals: ${JSON.stringify(approvals)}`);
+        return connection.getReleaseApi();
+    }).then(api => {
+        return api.getApprovals(process.env.SYSTEM_TEAMPROJECT);
+    }).then(approvals => {
+        console.log(`Approvals: ${JSON.stringify(approvals)}`);
+        return connection.getReleaseApi();
+    }).then(api => {
+        return api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID);
+    }).then(definition => {
+        console.log(`Definitions: ${JSON.stringify(definition)}`);
+        console.log();
+        console.log(`[+] Update approvals: Complete`);
     }).catch(error => {
-        console.log('[-] Get details from REST endpoint: Failure');
+        console.log('[-] Update approvals: Failure');
         console.error(`Reason: ${error}`);
         console.log();
         console.log('[-] Executing task: Failure');
-        console.log('Reason: Get details from REST endpoint: Failure');
+        console.log('Reason: Update approvals: Failure');
     });
 } catch (error) {
     console.log();
