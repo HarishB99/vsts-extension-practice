@@ -11,8 +11,8 @@
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 0,
-        "Minor": 8,
-        "Patch": 9
+        "Minor": 9,
+        "Patch": 2
     },
     "runsOn": [
         "Agent"
@@ -53,7 +53,7 @@
             "label": "Timeout duration",
             "defaultValue": "1",
             "required": true,
-            "helpMarkDown": "A number, in days, to indicate the number of days before the secondary approver is allowed to approve this release.",
+            "helpMarkDown": "A number, in minutes, to indicate duration in minutes before the secondary approver is allowed to approve this release.",
             "validation": {
                 "expression": "isMatch(value, '^[0-9]+$', 'IgnoreCase')",
                 "message": "Please enter a valid numerical value."
