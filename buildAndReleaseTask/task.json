@@ -6,18 +6,16 @@
     "helpMarkDown": "",
     "category": "Utility",
     "visibility": [
-        "Build",
         "Release"
     ],
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 0,
         "Minor": 8,
-        "Patch": 0
+        "Patch": 3
     },
     "runsOn": [
-        "Agent",
-        "Server"
+        "Agent"
     ],
     "instanceNameFormat": "Release Task",
     "groups": [

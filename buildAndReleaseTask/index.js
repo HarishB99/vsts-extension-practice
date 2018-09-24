@@ -26,29 +26,56 @@ try {
     console.log();
     connection.getReleaseApi()
     .then(api => {
-        return api.updateReleaseApprovals([{
-            approvalType: 'postDeploy',
+        return Promise.all([
+            api.getRelease(process.env.SYSTEM_TEAMPROJECT, parseInt(process.env.RELEASE_RELEASEID)),
+            connection.getReleaseApi()
+        ]);
+        // return api.updateReleaseApprovals([{
+        //     approvalType: 'postDeploy',
+        //     approver: {
+        //         id: primary_approver
+        //     },
+        //     isAutomated: false,
+        //     status: 'reassigned'
+        // }], process.env.SYSTEM_TEAMPROJECT);
+    })
+    .then(results => {
+        const release = results[0];
+        const secondApi = results[1];
+        // console.log(`${JSON.stringify(release)}`);
+        release.environments[0].postApprovalsSnapshot.approvalOptions = {
+            timeoutInMinutes: 30
+        };
+
+        release.environments[0].postApprovalsSnapshot.approvals = [{
+            isAutomated: false,
             approver: {
                 id: primary_approver
             },
-            isAutomated: false,
-            status: 'reassigned'
-        }], process.env.SYSTEM_TEAMPROJECT);
-    }).then(approvals => {
-        console.log(`Updated Approvals: ${JSON.stringify(approvals)}`);
-        return connection.getReleaseApi();
-    }).then(api => {
-        return api.getApprovals(process.env.SYSTEM_TEAMPROJECT);
-    }).then(approvals => {
-        console.log(`Approvals: ${JSON.stringify(approvals)}`);
-        return connection.getReleaseApi();
-    }).then(api => {
-        return api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID);
-    }).then(definition => {
-        console.log(`Definitions: ${JSON.stringify(definition)}`);
-        console.log();
-        console.log(`[+] Update approvals: Complete`);
-    }).catch(error => {
+            isNotificationOn: true
+        }];
+        console.log(`Update release: ${JSON.stringify(release)}`);
+        return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
+    })
+    // .then(approvals => {
+    //     console.log(`Updated Approvals: ${JSON.stringify(approvals)}`);
+    //     return connection.getReleaseApi();
+    // }).then(api => {
+    //     return api.getApprovals(process.env.SYSTEM_TEAMPROJECT);
+    // }).then(approvals => {
+    //     console.log(`Approvals: ${JSON.stringify(approvals)}`);
+    //     return connection.getReleaseApi();
+    // }).then(api => {
+    //     return api.getReleaseDefinition(process.env.SYSTEM_TEAMPROJECT, process.env.RELEASE_DEFINITIONID);
+    // }).then(definition => {
+    //     console.log(`Definitions: ${JSON.stringify(definition)}`);
+    //     console.log();
+    //     console.log(`[+] Update approvals: Complete`);
+    // })
+    .then(release => {
+        console.log(`After update: ${JSON.stringify(release)}`);
+    })
+    .catch(error => {
         console.log('[-] Update approvals: Failure');
         console.error(`Reason: ${error}`);
         console.log();
