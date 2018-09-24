@@ -10,9 +10,10 @@ try {
     console.log();
     console.log('[i] Storing input variables: Started');
     console.log();
-    let primary_approver = task.getInput('primary_approver', true);
+    let primary_approver = JSON.parse(task.getInput('primary_approver', true));
     console.log(`[i] primary_approver: ${primary_approver}`);
-    let secondary_approver = task.getInput('secondary_approver', true);
+    // console.log(`[i] typeof primary_approver: ${typeof primary_approver}`);
+    let secondary_approver = JSON.parse(task.getInput('secondary_approver', true));
     console.log(`[i] secondary_approver: ${secondary_approver}`);
     let approval_timeout = task.getInput('approval_timeout', true);
     console.log(`[i] approval_timeout: ${approval_timeout}`);
@@ -43,16 +44,17 @@ try {
         const release = results[0];
         const secondApi = results[1];
         // console.log(`${JSON.stringify(release)}`);
-        release.environments[0].postApprovalsSnapshot.approvalOptions = {
+        release.environments[1].postApprovalsSnapshot.approvalOptions = {
             timeoutInMinutes: 30
         };
 
-        release.environments[0].postApprovalsSnapshot.approvals = [{
+        release.environments[1].postApprovalsSnapshot.approvals = [{
             isAutomated: false,
             approver: {
-                id: primary_approver
+                id: primary_approver[0]
             },
-            isNotificationOn: true
+            isNotificationOn: true,
+            rank: 1
         }];
         console.log(`Update release: ${JSON.stringify(release)}`);
         return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
