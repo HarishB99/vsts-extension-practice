@@ -82,6 +82,18 @@ try {
                     rank: ++currentIndex
                 });
             }
+            for (let i = 0; i < pre_secondary_approvers.length; i++) {
+                const pre_secondary_approver = pre_secondary_approvers[i];
+                let currentIndex = i;
+                preApprovalsArray.push({
+                    isAutomated: false,
+                    approver: {
+                        id: pre_secondary_approver
+                    },
+                    isNotificationOn: false,
+                    rank: ++currentIndex
+                });
+            }
             release.environments[indexOfInterest].preApprovalsSnapshot.approvals = preApprovalsArray;
         }
         
@@ -100,6 +112,18 @@ try {
                     isAutomated: false,
                     approver: {
                         id: post_primary_approver
+                    },
+                    isNotificationOn: false,
+                    rank: ++currentIndex
+                });
+            }
+            for (let i = 0; i < post_secondary_approvers.length; i++) {
+                const post_secondary_approver = post_secondary_approvers[i];
+                let currentIndex = i;
+                postApprovalsArray.push({
+                    isAutomated: false,
+                    approver: {
+                        id: post_secondary_approver
                     },
                     isNotificationOn: false,
                     rank: ++currentIndex
