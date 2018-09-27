@@ -10,9 +10,9 @@
     ],
     "author": "Harish S/O Balamurugan",
     "version": {
-        "Major": 0,
-        "Minor": 9,
-        "Patch": 7
+        "Major": 1,
+        "Minor": 0,
+        "Patch": 2
     },
     "runsOn": [
         "Agent"
@@ -27,37 +27,99 @@
         {
             "name": "extra",
             "displayName": "Extra Options",
+            "isExpanded": false
+        },
+        {
+            "name": "preapproval",
+            "displayName": "Pre-Approval",
+            "isExpanded": true
+        },
+        {
+            "name": "postapproval",
+            "displayName": "Post-Approval",
             "isExpanded": true
         }
     ],
     "inputs": [
         {
-            "name": "primary_approver",
+            "name": "pre_primary_approvers",
             "type": "identities",
             "label": "Primary Approver",
             "defaultValue": "",
-            "required": true,
+            "required": false,
+            "groupName": "preapproval",
             "helpMarkDown": "A user / group of users involved in this project"
         },
         {
-            "name": "secondary_approver",
+            "name": "pre_secondary_approvers",
             "type": "identities",
             "label": "Secondary Approver",
             "defaultValue": "",
-            "required": true,
+            "required": false,
+            "groupName": "preapproval",
             "helpMarkDown": "A user / group of users involved in this project"
         },
         {
-            "name": "approval_timeout",
+            "name": "pre_approval_timeout",
             "type": "number",
             "label": "Timeout duration",
             "defaultValue": "1",
-            "required": true,
+            "required": false,
+            "groupName": "preapproval",
             "helpMarkDown": "A number, in minutes, to indicate duration in minutes before the secondary approver is allowed to approve this release.",
             "validation": {
                 "expression": "isMatch(value, '^[0-9]+$', 'IgnoreCase')",
                 "message": "Please enter a valid numerical value."
             }
+        },
+        {
+            "name": "pre_enabled",
+            "type": "boolean",
+            "label": "Enabled",
+            "required": true,
+            "defaultValue": "true",
+            "groupName": "preapproval",
+            "helpMarkDown": "If this is true, pre-deployment approvals will be enabled"
+        },
+        {
+            "name": "post_primary_approvers",
+            "type": "identities",
+            "label": "Primary Approver",
+            "defaultValue": "",
+            "required": false,
+            "groupName": "postapproval",
+            "helpMarkDown": "A user / group of users involved in this project"
+        },
+        {
+            "name": "post_secondary_approvers",
+            "type": "identities",
+            "label": "Secondary Approver",
+            "defaultValue": "",
+            "required": false,
+            "groupName": "postapproval",
+            "helpMarkDown": "A user / group of users involved in this project"
+        },
+        {
+            "name": "post_approval_timeout",
+            "type": "number",
+            "label": "Timeout duration",
+            "defaultValue": "1",
+            "required": false,
+            "groupName": "postapproval",
+            "helpMarkDown": "A number, in minutes, to indicate duration in minutes before the secondary approver is allowed to approve this release.",
+            "validation": {
+                "expression": "isMatch(value, '^[0-9]+$', 'IgnoreCase')",
+                "message": "Please enter a valid numerical value."
+            }
+        },
+        {
+            "name": "post_enabled",
+            "type": "boolean",
+            "label": "Enabled",
+            "required": true,
+            "defaultValue": "true",
+            "groupName": "postapproval",
+            "helpMarkDown": "If this is true, post-deployment approvals will be enabled"
         }
     ],
     "execution": {
