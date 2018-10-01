@@ -85,13 +85,14 @@ try {
             for (let i = 0; i < pre_secondary_approvers.length; i++) {
                 const pre_secondary_approver = pre_secondary_approvers[i];
                 let currentIndex = i;
+                let currentRank = currentIndex + 1 + preApprovalsArray[preApprovalsArray.length - 1].rank;
                 preApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: pre_secondary_approver
                     },
                     isNotificationOn: false,
-                    rank: ++currentIndex
+                    rank: currentRank
                 });
             }
             release.environments[indexOfInterest].preApprovalsSnapshot.approvals = preApprovalsArray;
@@ -120,13 +121,14 @@ try {
             for (let i = 0; i < post_secondary_approvers.length; i++) {
                 const post_secondary_approver = post_secondary_approvers[i];
                 let currentIndex = i;
+                let currentRank = currentIndex + 1 + postApprovalsArray[postApprovalsArray.length - 1].rank;
                 postApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: post_secondary_approver
                     },
                     isNotificationOn: false,
-                    rank: ++currentIndex
+                    rank: currentRank
                 });
             }
             release.environments[indexOfInterest].postApprovalsSnapshot.approvals = postApprovalsArray;
