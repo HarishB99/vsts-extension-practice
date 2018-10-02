@@ -65,34 +65,35 @@ try {
         if (pre_enabled) {
             release.environments[indexOfInterest].preApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: pre_approval_timeout,
-                releaseCreatorCanBeApprover: true
+                releaseCreatorCanBeApprover: true,
+                requiredApproverCount: 1
             };
 
             const preApprovalsArray = [];
 
             for (let i = 0; i < pre_primary_approvers.length; i++) {
                 const pre_primary_approver = pre_primary_approvers[i];
-                let currentIndex = i;
+                // let currentIndex = i;
                 preApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: pre_primary_approver
                     },
                     isNotificationOn: false,
-                    rank: ++currentIndex
+                    rank: 1
                 });
             }
             for (let i = 0; i < pre_secondary_approvers.length; i++) {
                 const pre_secondary_approver = pre_secondary_approvers[i];
-                let currentIndex = i;
-                let currentRank = currentIndex + 1 + preApprovalsArray[preApprovalsArray.length - 1].rank;
+                // let currentIndex = i;
+                // let currentRank = currentIndex + 1 + preApprovalsArray[preApprovalsArray.length - 1].rank;
                 preApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: pre_secondary_approver
                     },
                     isNotificationOn: false,
-                    rank: currentRank
+                    rank: 1
                 });
             }
             release.environments[indexOfInterest].preApprovalsSnapshot.approvals = preApprovalsArray;
@@ -101,34 +102,35 @@ try {
         if (post_enabled) {
             release.environments[indexOfInterest].postApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: post_approval_timeout,
-                releaseCreatorCanBeApprover: true
+                releaseCreatorCanBeApprover: true,
+                requiredApproverCount: 1
             };
 
             const postApprovalsArray = [];
 
             for (let i = 0; i < post_primary_approvers.length; i++) {
                 const post_primary_approver = post_primary_approvers[i];
-                let currentIndex = i;
+                // let currentIndex = i;
                 postApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: post_primary_approver
                     },
                     isNotificationOn: false,
-                    rank: ++currentIndex
+                    rank: 1
                 });
             }
             for (let i = 0; i < post_secondary_approvers.length; i++) {
                 const post_secondary_approver = post_secondary_approvers[i];
-                let currentIndex = i;
-                let currentRank = currentIndex + 1 + postApprovalsArray[postApprovalsArray.length - 1].rank;
+                // let currentIndex = i;
+                // let currentRank = currentIndex + 1 + postApprovalsArray[postApprovalsArray.length - 1].rank;
                 postApprovalsArray.push({
                     isAutomated: false,
                     approver: {
                         id: post_secondary_approver
                     },
                     isNotificationOn: false,
-                    rank: currentRank
+                    rank: 1
                 });
             }
             release.environments[indexOfInterest].postApprovalsSnapshot.approvals = postApprovalsArray;
