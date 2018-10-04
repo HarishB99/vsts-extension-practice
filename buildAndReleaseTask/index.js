@@ -1,5 +1,8 @@
 const task = require('vsts-task-lib/task');
 const azure_devops_api = require('azure-devops-node-api');
+const mailer = require('nodemailer');
+// Regex for both URL and IP
+// ^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?|^((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$
 
 try {
     console.log();
@@ -14,28 +17,30 @@ try {
         let post_primary_approvers = null;
         let post_secondary_approvers = null;
         let post_approval_timeout = null;
+        
         const pre_enabled = task.getBoolInput('pre_enabled', true);
-            console.log(`[i] pre_enabled: ${pre_enabled}`);
         const post_enabled = task.getBoolInput('post_enabled', true);
-            console.log(`[i] post_enabled: ${post_enabled}`);
 
         if (pre_enabled) {
             pre_primary_approvers = JSON.parse(task.getInput('pre_primary_approvers', true));
-                console.log(`[i] pre_primary_approvers: ${pre_primary_approvers}`);
             pre_secondary_approvers = JSON.parse(task.getInput('pre_secondary_approvers', true));
-                console.log(`[i] pre_secondary_approvers: ${pre_secondary_approvers}`);
             pre_approval_timeout = parseInt(task.getInput('pre_approval_timeout', true));
-                console.log(`[i] typeof pre_approval_timeout: ${typeof pre_approval_timeout}`);
         }
         
         if (post_enabled) {
             post_primary_approvers = JSON.parse(task.getInput('post_primary_approvers', true));
-                console.log(`[i] post_primary_approvers: ${post_primary_approvers}`); 
             post_secondary_approvers = JSON.parse(task.getInput('post_secondary_approvers', true));
-                console.log(`[i] post_secondary_approvers: ${post_secondary_approvers}`);
             post_approval_timeout = parseInt(task.getInput('post_approval_timeout', true));
-                console.log(`[i] typeof post_approval_timeout: ${typeof post_approval_timeout}`);
         }
+
+        const smtp_host = task.getInput('smtp_host', true);
+        console.log(`[i] smtp_host = ${smtp_host}, type: ${typeof smtp_host}`);
+        const smtp_port = parseInt(task.getInput('smtp_port', true));
+        console.log(`[i] smtp_port = ${smtp_port}, type: ${typeof smtp_port}`);
+        const smtp_username = task.getInput('smtp_username', true);
+        console.log(`[i] smtp_username = ${smtp_username}, type: ${typeof smtp_username}`);
+        const smtp_password = task.getInput('smtp_password', true);
+        console.log(`[i] typeof smtp_password: ${typeof smtp_password}, ${smtp_password}`);
     console.log();
     console.log('[+] Storing input variables: Complete');
     console.log();
@@ -143,6 +148,28 @@ try {
         console.log(`Updated release: ${JSON.stringify(release)}`);
         console.log();
         console.log(`[+] Update approvals: Complete`);
+        console.log();
+        console.log(`[i] Send email: Started`);
+        const server = mailer.createTransport({
+            host: smtp_host,
+            port: smtp_port,
+            auth: {
+                user: smtp_username,
+                pass: smtp_password
+            },
+            secure: true,
+            logger: true
+        });
+
+        return server.sendMail({
+            from: smtp_username,
+            to: process.env.RELEASE_REQUESTEDFOREMAIL,
+            subject: 'Artefacts Waiting To Be Released',
+            html: `Dear ${process.env.RELEASE_REQUESTEDFOR},<br/><br/>This email was sent to inform you that artefacts have been uploaded to your Azure DevOps Project, ${process.env.SYSTEM_TEAMPROJECT}.<br/><br/>Link to to approve release: ${release._links.web.href}<br/><br/>Thank you.<br/>Harish Release Tools.`
+        });
+    }).then(() => {
+        console.log();
+        console.log(`[+] Send email: Complete`);
         console.log();
         console.log(`[+] Executing task: Complete`);
     }).catch(error => {

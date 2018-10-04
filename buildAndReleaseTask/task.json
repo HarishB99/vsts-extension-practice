@@ -11,8 +11,8 @@
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 1,
-        "Minor": 0,
-        "Patch": 6
+        "Minor": 1,
+        "Patch": 0
     },
     "runsOn": [
         "Agent"
@@ -30,6 +30,11 @@
             "isExpanded": false
         },
         {
+            "name": "email",
+            "displayName": "Email Options",
+            "isExpanded": true
+        },
+        {
             "name": "preapproval",
             "displayName": "Pre-Approval",
             "isExpanded": true
@@ -41,6 +46,50 @@
         }
     ],
     "inputs": [
+        {
+            "name": "smtp_host",
+            "type": "string",
+            "label": "SMTP Server URL",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The Smtp server to use"
+        },
+        {
+            "name": "smtp_port",
+            "type": "number",
+            "label": "SMTP Port Number",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "validation": {
+                "expression": "isInRange(value, 0, 65535)",
+                "message": "Please enter a valid port number."
+            },
+            "helpMarkDown": "The port number required by your smtp server."
+        },
+        {
+            "name": "smtp_username",
+            "type": "string",
+            "label": "Email Address",
+            "defaultValue": "",
+            "groupName": "email",
+            "validation": {
+                "expression": "isEmail(value)",
+                "message": "Please enter a valid email address."
+            },
+            "required": true,
+            "helpMarkDown": "The User name to use"
+        },
+        {
+            "name": "smtp_password",
+            "type": "string",
+            "label": "Password",
+            "defaultValue": "$(password)",
+            "groupName": "email",
+            "required": true,
+            "helpMarkDown": "The Password to use"
+        },
         {
             "name": "pre_primary_approvers",
             "type": "identities",
