@@ -41,6 +41,10 @@ try {
         console.log(`[i] smtp_username = ${smtp_username}, type: ${typeof smtp_username}`);
         const smtp_password = task.getInput('smtp_password', true);
         console.log(`[i] typeof smtp_password: ${typeof smtp_password}, ${smtp_password}`);
+        const smtp_tool_name = task.getInput('smtp_tool_name', true);
+        console.log(`[i] smtp_tool_name = ${smtp_tool_name}, type: ${typeof smtp_tool_name}`);
+        const smtp_tool_version = task.getInput('smtp_tool_version', true);
+        console.log(`[i] smtp_tool_version = ${smtp_tool_version}, type: ${typeof smtp_tool_version}`);
     console.log();
     console.log('[+] Storing input variables: Complete');
     console.log();

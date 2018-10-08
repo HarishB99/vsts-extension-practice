@@ -12,7 +12,7 @@
     "version": {
         "Major": 1,
         "Minor": 1,
-        "Patch": 0
+        "Patch": 1
     },
     "runsOn": [
         "Agent"
@@ -47,13 +47,31 @@
     ],
     "inputs": [
         {
+            "name": "smtp_tool_name",
+            "type": "string",
+            "label": "Tool Name",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The name of the tool / code you are uploading."
+        },
+        {
+            "name": "smtp_tool_version",
+            "type": "string",
+            "label": "Tool Version",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The version of the tool / code you are uploading."
+        },
+        {
             "name": "smtp_host",
             "type": "string",
             "label": "SMTP Server URL",
             "defaultValue": "",
             "required": true,
             "groupName": "email",
-            "helpMarkDown": "The Smtp server to use"
+            "helpMarkDown": "The URL of the SMTP server to use."
         },
         {
             "name": "smtp_port",
