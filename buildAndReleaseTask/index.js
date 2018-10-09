@@ -165,12 +165,37 @@ try {
             logger: true
         });
 
-        return server.sendMail({
-            from: smtp_username,
-            to: process.env.RELEASE_REQUESTEDFOREMAIL,
-            subject: 'Artefacts Waiting To Be Released',
-            html: `Dear ${process.env.RELEASE_REQUESTEDFOR},<br/><br/>This email was sent to inform you that artefacts have been uploaded to your Azure DevOps Project, ${process.env.SYSTEM_TEAMPROJECT}.<br/><br/>Link to to approve release: ${release._links.web.href}<br/><br/>Thank you.<br/>Harish Release Tools.`
+        const recipients = [];
+
+        let indexOfInterest = 0;
+        for (let i = 0; i < release.environments.length; i++) {
+            const environment = release.environments[i];
+            if (environment.name === process.env.RELEASE_ENVIRONMENTNAME) {
+                indexOfInterest = ++i;
+                break;
+            }
+        }
+
+        release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
+            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName});
         });
+
+        release.environments[indexOfInterest].postApprovalsSnapshot.approvals.forEach(approval => {
+            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName});
+        });
+
+        const emails_sent = [];
+
+        recipients.forEach(recipient => {
+            emails_sent.push(server.sendMail({
+                from: smtp_username,
+                to: recipient.email,
+                subject: 'Artefacts Waiting To Be Released',
+                html: `Dear ${recipient.name},<br/><br/>This email was sent to inform you that artefacts have been uploaded to your Azure DevOps Project, ${process.env.SYSTEM_TEAMPROJECT}.<br/><br/>Link to to approve release: <a href="${release._links.web.href}">${release._links.web.href}</a><br/><br/>Thank you.<br/>Harish Release Tools.`
+            }));
+        });
+
+        return Promise.all(emails_sent);
     }).then(() => {
         console.log();
         console.log(`[+] Send email: Complete`);
