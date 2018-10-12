@@ -41,10 +41,10 @@ try {
         console.log(`[i] smtp_username = ${smtp_username}, type: ${typeof smtp_username}`);
         const smtp_password = task.getInput('smtp_password', true);
         console.log(`[i] typeof smtp_password: ${typeof smtp_password}, ${smtp_password}`);
-        const smtp_tool_name = task.getInput('smtp_tool_name', true);
-        console.log(`[i] smtp_tool_name = ${smtp_tool_name}, type: ${typeof smtp_tool_name}`);
-        const smtp_tool_version = task.getInput('smtp_tool_version', true);
-        console.log(`[i] smtp_tool_version = ${smtp_tool_version}, type: ${typeof smtp_tool_version}`);
+        const tool_name = task.getInput('tool_name', true);
+        console.log(`[i] tool_name = ${tool_name}, type: ${typeof tool_name}`);
+        const tool_version = task.getInput('tool_version', true);
+        console.log(`[i] tool_version = ${tool_version}, type: ${typeof tool_version}`);
     console.log();
     console.log('[+] Storing input variables: Complete');
     console.log();
@@ -177,21 +177,30 @@ try {
         }
 
         release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
-            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName});
+            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName, 'type': 'Pre'});
         });
 
         release.environments[indexOfInterest].postApprovalsSnapshot.approvals.forEach(approval => {
-            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName});
+            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName, 'type': 'Post'});
         });
 
         const emails_sent = [];
+
+        const approval_link = `${process.env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${process.env.SYSTEM_TEAMPROJECT}/_apps/hub/HarishB.harish-release-task-page.harish-approval-release-hub`;
 
         recipients.forEach(recipient => {
             emails_sent.push(server.sendMail({
                 from: smtp_username,
                 to: recipient.email,
-                subject: 'Artefacts Waiting To Be Released',
-                html: `Dear ${recipient.name},<br/><br/>This email was sent to inform you that artefacts have been uploaded to your Azure DevOps Project, ${process.env.SYSTEM_TEAMPROJECT}.<br/><br/>Link to to approve release: <a href="${release._links.web.href}">${release._links.web.href}</a><br/><br/>Thank you.<br/>Harish Release Tools.`
+                subject: `Pending ${recipient.type}-Approval for ${tool_name}, Version ${tool_version}`,
+                html: `Dear ${recipient.name},` + 
+                    `<br/>` + 
+                    `<br/>This email was sent to inform you that there is a pending ${recipient.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${process.env.SYSTEM_TEAMPROJECT}.` + 
+                    `<br/>` + 
+                    `<br/>Link to approve release: <a href="${approval_link}">${approval_link}</a>` + 
+                    `<br/>` + 
+                    `<br/>Thank you.` + 
+                    `<br/>Harish Release Tools.`
             }));
         });
 
