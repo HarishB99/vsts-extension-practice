@@ -1,15 +1,12 @@
 const task = require('vsts-task-lib/task');
 const azure_devops_api = require('azure-devops-node-api');
 const mailer = require('nodemailer');
-// Regex for both URL and IP
-// ^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?|^((http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$
 
 try {
     console.log();
     console.log('[i] Executing task: Started');
     console.log();
     console.log('[i] Storing input variables: Started');
-    console.log();
         let pre_primary_approvers = null;
         let pre_secondary_approvers = null;
         let pre_approval_timeout = null;
@@ -34,18 +31,12 @@ try {
         }
 
         const smtp_host = task.getInput('smtp_host', true);
-        console.log(`[i] smtp_host = ${smtp_host}, type: ${typeof smtp_host}`);
         const smtp_port = parseInt(task.getInput('smtp_port', true));
-        console.log(`[i] smtp_port = ${smtp_port}, type: ${typeof smtp_port}`);
         const smtp_username = task.getInput('smtp_username', true);
-        console.log(`[i] smtp_username = ${smtp_username}, type: ${typeof smtp_username}`);
         const smtp_password = task.getInput('smtp_password', true);
-        console.log(`[i] typeof smtp_password: ${typeof smtp_password}, ${smtp_password}`);
+        const smtp_verbose = task.getBoolInput('smtp_verbose', true);
         const tool_name = task.getInput('tool_name', true);
-        console.log(`[i] tool_name = ${tool_name}, type: ${typeof tool_name}`);
         const tool_version = task.getInput('tool_version', true);
-        console.log(`[i] tool_version = ${tool_version}, type: ${typeof tool_version}`);
-    console.log();
     console.log('[+] Storing input variables: Complete');
     console.log();
     const authHandler = azure_devops_api.getBearerHandler(
@@ -82,7 +73,6 @@ try {
 
             for (let i = 0; i < pre_primary_approvers.length; i++) {
                 const pre_primary_approver = pre_primary_approvers[i];
-                // let currentIndex = i;
                 preApprovalsArray.push({
                     isAutomated: false,
                     approver: {
@@ -94,8 +84,6 @@ try {
             }
             for (let i = 0; i < pre_secondary_approvers.length; i++) {
                 const pre_secondary_approver = pre_secondary_approvers[i];
-                // let currentIndex = i;
-                // let currentRank = currentIndex + 1 + preApprovalsArray[preApprovalsArray.length - 1].rank;
                 preApprovalsArray.push({
                     isAutomated: false,
                     approver: {
@@ -119,7 +107,6 @@ try {
 
             for (let i = 0; i < post_primary_approvers.length; i++) {
                 const post_primary_approver = post_primary_approvers[i];
-                // let currentIndex = i;
                 postApprovalsArray.push({
                     isAutomated: false,
                     approver: {
@@ -131,8 +118,6 @@ try {
             }
             for (let i = 0; i < post_secondary_approvers.length; i++) {
                 const post_secondary_approver = post_secondary_approvers[i];
-                // let currentIndex = i;
-                // let currentRank = currentIndex + 1 + postApprovalsArray[postApprovalsArray.length - 1].rank;
                 postApprovalsArray.push({
                     isAutomated: false,
                     approver: {
@@ -144,28 +129,20 @@ try {
             }
             release.environments[indexOfInterest].postApprovalsSnapshot.approvals = postApprovalsArray;
         }
-        console.log(`[i] Information to be updated: ${JSON.stringify(release)}`);
+        // console.log(`[i] Information to be updated: ${JSON.stringify(release)}`);
         console.log('[i] Update approvals: Started');
-        return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
-    }).then(release => {
-        console.log();
-        console.log(`Updated release: ${JSON.stringify(release)}`);
-        console.log();
+        // return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
+        return Promise.all([
+            secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id),
+            connection.getWorkItemTrackingApi()
+        ]);
+    }).then(results => {
+        const [ release, api ] = results;
+
+        // console.log(`[i] Updated release: ${JSON.stringify(release)}`);
         console.log(`[+] Update approvals: Complete`);
         console.log();
-        console.log(`[i] Send email: Started`);
-        const server = mailer.createTransport({
-            host: smtp_host,
-            port: smtp_port,
-            auth: {
-                user: smtp_username,
-                pass: smtp_password
-            },
-            secure: true,
-            logger: true
-        });
-
-        const recipients = [];
+        console.log(`[i] Create work item: Started`);
 
         let indexOfInterest = 0;
         for (let i = 0; i < release.environments.length; i++) {
@@ -176,26 +153,75 @@ try {
             }
         }
 
+        const approvers = [];
+
         release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
-            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName, 'type': 'Pre'});
+            approvers.push({
+                info: approval.approver,
+                type: 'Pre'
+            });
         });
 
         release.environments[indexOfInterest].postApprovalsSnapshot.approvals.forEach(approval => {
-            recipients.push({'email': approval.approver.uniqueName, 'name': approval.approver.displayName, 'type': 'Post'});
+            approvers.push({
+                info: approval.approver,
+                type: 'Post'
+            });
         });
 
-        const emails_sent = [];
+        return Promise.all([
+            api.createWorkItem(null, [
+                {
+                    "op": "add",
+                    "path": "/fields/System.Title",
+                    "value": `${tool_name}, ${tool_version}`
+                }, {
+                    "op": "add",
+                    "path": "/fields/Associated Context",
+                    "value": `${tool_name}, ${tool_version}`
+                }, {
+                    "op": "replace",
+                    "path": "/fields/System.AssignedTo",
+                    "value": `${approvers[0].info.displayName} <${approvers[0].info.uniqueName}>`
+                }
+            ], process.env.SYSTEM_TEAMPROJECT, 'Code Review Request', false, false, false),
+            approvers
+        ]); 
+    }).then(results => {
+        const [ workItem, approvers ] = results;
 
-        const approval_link = `${process.env.SYSTEM_TEAMFOUNDATIONCOLLECTIONURI}${process.env.SYSTEM_TEAMPROJECT}/_apps/hub/HarishB.harish-release-task-page.harish-approval-release-hub`;
+        console.log(`[i] Work Item created: ${workItem}`);
+        console.log(`[+] Create work item: Complete`);
+        console.log();
+        console.log(`[i] Send email: Started`);
+        const transportOptions = {
+            host: smtp_host,
+            port: smtp_port,
+            auth: {
+                user: smtp_username,
+                pass: smtp_password
+            },
+            secure: true,
+            logger: false
+        };
 
-        recipients.forEach(recipient => {
-            emails_sent.push(server.sendMail({
+        if (smtp_verbose) {
+            transportOptions.logger = true;
+        }
+
+        const server = mailer.createTransport(transportOptions);
+
+        const email_promises = [];
+
+        const approval_link = workItem._links.html.href;
+        approvers.forEach(approver => {
+            email_promises.push(server.sendMail({
                 from: smtp_username,
-                to: recipient.email,
-                subject: `Pending ${recipient.type}-Approval for ${tool_name}, Version ${tool_version}`,
-                html: `Dear ${recipient.name},` + 
+                to: approver.info.uniqueName,
+                subject: `Pending ${approver.type}-Approval for ${tool_name}, Version ${tool_version}`,
+                html: `Dear ${approver.info.displayName},` + 
                     `<br/>` + 
-                    `<br/>This email was sent to inform you that there is a pending ${recipient.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${process.env.SYSTEM_TEAMPROJECT}.` + 
+                    `<br/>This email was sent to inform you that there is a pending ${approver.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${process.env.SYSTEM_TEAMPROJECT}.` + 
                     `<br/>` + 
                     `<br/>Link to approve release: <a href="${approval_link}">${approval_link}</a>` + 
                     `<br/>` + 
@@ -204,11 +230,11 @@ try {
             }));
         });
 
-        return Promise.all(emails_sent);
+        return Promise.all(email_promises);
     }).then(() => {
-        console.log();
         console.log(`[+] Send email: Complete`);
         console.log();
+    }).then(() => {
         console.log(`[+] Executing task: Complete`);
     }).catch(error => {
         console.log();

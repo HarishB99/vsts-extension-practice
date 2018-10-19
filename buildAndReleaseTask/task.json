@@ -11,8 +11,8 @@
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 1,
-        "Minor": 1,
-        "Patch": 6
+        "Minor": 4,
+        "Patch": 0
     },
     "runsOn": [
         "Agent"
@@ -107,6 +107,15 @@
             "groupName": "email",
             "required": true,
             "helpMarkDown": "The Password to use."
+        },
+        {
+            "name": "smtp_verbose",
+            "type": "boolean",
+            "label": "SMTP Verbose Mode Enabled",
+            "defaultValue": "false",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "If this is true, the email handler will log more verbose output"
         },
         {
             "name": "pre_primary_approvers",
