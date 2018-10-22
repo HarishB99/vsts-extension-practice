@@ -37,6 +37,8 @@ try {
         const smtp_verbose = task.getBoolInput('smtp_verbose', true);
         const tool_name = task.getInput('tool_name', true);
         const tool_version = task.getInput('tool_version', true);
+
+        const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true));
     console.log('[+] Storing input variables: Complete');
     console.log();
     const authHandler = azure_devops_api.getBearerHandler(
@@ -169,6 +171,18 @@ try {
             });
         });
 
+        const work_item_stakeholder_info = {
+            displayName: '',
+            uniqueName: ''
+        };
+
+        approvers.forEach(approver => {
+            if (approver.info.id === work_item_stakeholder[0]) {
+                work_item_stakeholder_info.displayName = approver.info.displayName;
+                work_item_stakeholder_info.uniqueName = approver.info.uniqueName;
+            }
+        });
+
         return Promise.all([
             api.createWorkItem(null, [
                 {
@@ -182,7 +196,7 @@ try {
                 }, {
                     "op": "replace",
                     "path": "/fields/System.AssignedTo",
-                    "value": `${approvers[0].info.displayName} <${approvers[0].info.uniqueName}>`
+                    "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
                 }
             ], process.env.SYSTEM_TEAMPROJECT, 'Code Review Request', false, false, false),
             approvers
@@ -190,7 +204,7 @@ try {
     }).then(results => {
         const [ workItem, approvers ] = results;
 
-        console.log(`[i] Work Item created: ${workItem}`);
+        console.log(`[i] Work Item created: ${JSON.stringify(workItem)}`);
         console.log(`[+] Create work item: Complete`);
         console.log();
         console.log(`[i] Send email: Started`);

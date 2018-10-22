@@ -12,7 +12,7 @@
     "version": {
         "Major": 1,
         "Minor": 4,
-        "Patch": 0
+        "Patch": 2
     },
     "runsOn": [
         "Agent"
@@ -28,6 +28,11 @@
             "name": "extra",
             "displayName": "Extra Options",
             "isExpanded": false
+        },
+        {
+            "name": "workitem",
+            "displayName": "Work Item Options",
+            "isExpanded": true
         },
         {
             "name": "email",
@@ -46,6 +51,15 @@
         }
     ],
     "inputs": [
+        {
+            "name": "work_item_stakeholder",
+            "type": "identities",
+            "label": "Work Item To Be Assigned To User",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "workitem",
+            "helpMarkDown": "A user (NOT GROUP) who is also one of the approvers."
+        },
         {
             "name": "tool_name",
             "type": "string",
