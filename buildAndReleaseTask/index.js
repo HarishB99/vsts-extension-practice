@@ -198,7 +198,7 @@ try {
                     "path": "/fields/System.AssignedTo",
                     "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
                 }
-            ], process.env.SYSTEM_TEAMPROJECT, 'Code Review Request', false, false, false),
+            ], process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
             approvers
         ]); 
     }).then(results => {
