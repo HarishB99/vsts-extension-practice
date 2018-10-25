@@ -157,6 +157,10 @@ try {
 
         const approvers = [];
 
+        const pre_approval_id = release.environments[indexOfInterest].preApprovalsSnapshot.approvals[0].id;
+
+        const post_approval_id = release.environments[indexOfInterest].postApprovalsSnapshot.approvals[0].id;
+
         release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
             approvers.push({
                 info: approval.approver,
@@ -182,17 +186,32 @@ try {
                 work_item_stakeholder_info.uniqueName = approver.info.uniqueName;
             }
         });
-
+        
         return Promise.all([
             api.createWorkItem(null, [
                 {
                     "op": "add",
                     "path": "/fields/System.Title",
-                    "value": `${tool_name}, ${tool_version}`
+                    "value": `Pre-Approval for ${tool_name}, ${tool_version}`
                 }, {
                     "op": "add",
                     "path": "/fields/Associated Context",
-                    "value": `${tool_name}, ${tool_version}`
+                    "value": `Approval Id: ${pre_approval_id}`
+                }, {
+                    "op": "replace",
+                    "path": "/fields/System.AssignedTo",
+                    "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
+                }
+            ], process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
+            api.createWorkItem(null, [
+                {
+                    "op": "add",
+                    "path": "/fields/System.Title",
+                    "value": `Post-Approval for ${tool_name}, ${tool_version}`
+                }, {
+                    "op": "add",
+                    "path": "/fields/Associated Context",
+                    "value": `Approval Id: ${post_approval_id}`
                 }, {
                     "op": "replace",
                     "path": "/fields/System.AssignedTo",
@@ -202,9 +221,10 @@ try {
             approvers
         ]); 
     }).then(results => {
-        const [ workItem, approvers ] = results;
+        const [ preWorkItem, postWorkItem, approvers ] = results;
 
-        console.log(`[i] Work Item created: ${JSON.stringify(workItem)}`);
+        console.log(`[i] Pre Work Item created: ${JSON.stringify(preWorkItem)}`);
+        console.log(`[i] Post Work Item created: ${JSON.stringify(postWorkItem)}`);
         console.log(`[+] Create work item: Complete`);
         console.log();
         console.log(`[i] Send email: Started`);
@@ -227,8 +247,10 @@ try {
 
         const email_promises = [];
 
-        const approval_link = workItem._links.html.href;
+        const pre_approval_link = preWorkItem._links.html.href;
+        const post_approval_link = postWorkItem._links.html.href;
         approvers.forEach(approver => {
+            const approval_link = (approver.type === 'Pre') ? pre_approval_link : post_approval_link;
             email_promises.push(server.sendMail({
                 from: smtp_username,
                 to: approver.info.uniqueName,
