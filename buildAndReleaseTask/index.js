@@ -53,8 +53,9 @@ try {
     }).then(results => {
         console.log(`[+] Retrieve release info: Complete`);
         console.log();
-        const release = results[0];
-        const secondApi = results[1];
+
+        const [ release, secondApi ] = results;
+        
         let indexOfInterest = 0;
         for (let i = 0; i < release.environments.length; i++) {
             const environment = release.environments[i];
@@ -157,10 +158,6 @@ try {
 
         const approvers = [];
 
-        const pre_approval_id = release.environments[indexOfInterest].preApprovalsSnapshot.approvals[0].id;
-
-        const post_approval_id = release.environments[indexOfInterest].postApprovalsSnapshot.approvals[0].id;
-
         release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
             approvers.push({
                 info: approval.approver,
@@ -186,6 +183,11 @@ try {
                 work_item_stakeholder_info.uniqueName = approver.info.uniqueName;
             }
         });
+
+        const associated_context = JSON.stringify({
+            release_id: release.id,
+            indexOfInterest: indexOfInterest
+        });
         
         return Promise.all([
             api.createWorkItem(null, [
@@ -196,7 +198,7 @@ try {
                 }, {
                     "op": "add",
                     "path": "/fields/Associated Context",
-                    "value": `Approval Id: ${pre_approval_id}`
+                    "value": associated_context
                 }, {
                     "op": "replace",
                     "path": "/fields/System.AssignedTo",
@@ -211,7 +213,7 @@ try {
                 }, {
                     "op": "add",
                     "path": "/fields/Associated Context",
-                    "value": `Approval Id: ${post_approval_id}`
+                    "value": associated_context
                 }, {
                     "op": "replace",
                     "path": "/fields/System.AssignedTo",

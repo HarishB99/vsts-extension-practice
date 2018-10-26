@@ -8,19 +8,38 @@
     <script>
         VSS.init();
 
-        VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services"],
-            function(vss_service, release_mgmt_api, work_item_track_services) {
-                var client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
+        VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services",
+                    "TFS/Build/RestClient"],
+            function(vss_service, release_mgmt_api, work_item_track_services, build_api) {
+                var release_mgmt_client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
+                var build_client = vss_service.getCollectionClient(build_api.BuildHttpClient2);
 
                 work_item_track_services.WorkItemFormService.getService()
                 .then(function(service) {
                     return service.getFieldValue("Associated Context");
-                }).then(function(approval_id_string) {
-                    var parsed_approval_id = approval_id_string.split(": ")[1];
-                    // return client.getApproval(VSS.getWebContext().project.id, parsed_approval_id);
-                    return client.getApprovals(VSS.getWebContext().project.id);
-                }).then(function(approvals) {
-                    console.log(`Approvals: `, approvals);
+                }).then(function(value) {
+                    var release_info = JSON.parse(value);
+                    console.log('release_info: ', release_info);
+                    // return release_mgmt_client.getApproval(VSS.getWebContext().project.id, parsed_approval_id);
+                    // return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
+                    return release_mgmt_client.getRelease(VSS.getWebContext().project.id, release_info.release_id);
+                }).then(function(release) {
+                    console.log(`Release: `, release);
+                    return build_client.getArtifacts(release.artifacts["0"].definitionReference.version.id, VSS.getWebContext().project.id, 'Build');
+                }).then(function(artifacts) {
+                    console.log('Artifacts: ', artifacts);
+                    var artifacts_display = document.getElementById('artifacts');
+                    for (var i = 0; i < artifacts.length; i++) {
+                        var current_artefact = artifacts[i];
+                        var downloadUrl = current_artefact.resource.downloadUrl;
+                        var link = document.createElement('a');
+                            link.href = downloadUrl;
+                            link.innerHTML = downloadUrl;
+                        artifacts_display.appendChild(link);
+                        if (i !== artifacts.length - 1) {
+                            artifacts_display.appendChild(document.createElement('br'));
+                        }
+                    }
                 });
             });
 
@@ -98,5 +117,6 @@
 <body>
     <!-- <h1>The Ancient One is the last in a long line of Sorcerer Supreme.</h1> -->
     <!-- <div id="events"></div> -->
+    <div id="artifacts"></div>
 </body>
 </html>
