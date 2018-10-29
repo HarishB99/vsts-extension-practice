@@ -2,3 +2,4 @@
 **/*.vsix
 **/ignore/
 **/reverse-engineered.js
+**/test.js
