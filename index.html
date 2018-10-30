@@ -40,83 +40,17 @@
                             artifacts_display.appendChild(document.createElement('br'));
                         }
                     }
+                    return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
+                }).then(function (approvals) {
+                    console.log('Approvals: ', approvals);
                 });
             });
-
-        // VSS.require(["TFS/WorkItemTracking/Services"], function (_WorkItemServices) {
-        //     // Get the WorkItemFormService.  This service allows you to get/set fields/links on the 'active' work item (the work item
-        //     // that currently is displayed in the UI).
-        //     function getWorkItemFormService()
-        //     {
-        //         return _WorkItemServices.WorkItemFormService.getService();
-        //     }
-
-        //     // Register a listener for the work item group contribution.
-        //     VSS.register(VSS.getContribution().id, function () {
-        //         return {
-        //             // Called when the active work item is modified
-        //             onFieldChanged: function(args) {
-        //                 var eventsDiv = document.getElementById('events');
-        //                     var div = document.createElement('div');
-        //                     div.innerHTML = "onFieldChanged - " + JSON.stringify(args);
-        //                 eventsDiv.appendChild(div);
-        //             },
-
-        //             // Called when a new work item is being loaded in the UI
-        //             onLoaded: function (args) {
-
-        //                 getWorkItemFormService().then(function(service) {            
-        //                     // Get the current values for a few of the common fields
-        //                     service.getFieldValues(["System.Id", "System.Title", "System.State", "System.CreatedDate"]).then(
-        //                         function (value) {
-        //                             var eventsDiv = document.getElementById('events');
-        //                                 var div = document.createElement('div');
-        //                                 div.innerHTML = "onLoaded - " + JSON.stringify(value);
-        //                             eventsDiv.appendChild(div);
-        //                         });
-        //                 });
-        //             },
-
-        //             // Called when the active work item is being unloaded in the UI
-        //             onUnloaded: function (args) {
-        //                 var eventsDiv = document.getElementById('events');
-        //                 eventsDiv.innerHTML = '';
-        //                     var div = document.createElement('div');
-        //                     div.innerHTML = "onUnloaded - " + JSON.stringify(args);
-        //                 eventsDiv.appendChild(div);
-        //             },
-
-        //             // Called after the work item has been saved
-        //             onSaved: function (args) {
-        //                 var eventsDiv = document.getElementById('events');
-        //                     var div = document.createElement('div');
-        //                     div.innerHTML = "onSaved - " + JSON.stringify(args);
-        //                 eventsDiv.appendChild(div);
-        //             },
-
-        //             // Called when the work item is reset to its unmodified state (undo)
-        //             onReset: function (args) {
-        //                 var eventsDiv = document.getElementById('events');
-        //                     var div = document.createElement('div');
-        //                     div.innerHTML = "onReset - " + JSON.stringify(args);
-        //                 eventsDiv.appendChild(div);
-        //             },
-
-        //             // Called when the work item has been refreshed from the server
-        //             onRefreshed: function (args) {
-        //                 var eventsDiv = document.getElementById('events');
-        //                     var div = document.createElement('div');
-        //                     div.innerHTML = "onRefreshed - " + JSON.stringify(args);
-        //                 eventsDiv.appendChild(div);
-        //             }
-        //         }
-        //     });            
-        // });
     </script>
 </head>
 <body>
-    <!-- <h1>The Ancient One is the last in a long line of Sorcerer Supreme.</h1> -->
-    <!-- <div id="events"></div> -->
     <div id="artifacts"></div>
+    <!-- <br/>
+    <button id="reject">Reject</button>
+    <button id="approve">Approve</button> -->
 </body>
 </html>

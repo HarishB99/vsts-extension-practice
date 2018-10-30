@@ -137,11 +137,11 @@ try {
         // return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
         return Promise.all([
             secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id),
-            connection.getWorkItemTrackingApi()
+            connection.getBuildApi()
         ]);
     }).then(results => {
         const [ release, api ] = results;
-
+        
         // console.log(`[i] Updated release: ${JSON.stringify(release)}`);
         console.log(`[+] Update approvals: Complete`);
         console.log();
@@ -172,54 +172,139 @@ try {
             });
         });
 
-        const work_item_stakeholder_info = {
-            displayName: '',
-            uniqueName: ''
+        const work_item_info = {
+            owner_info: {
+                displayName: '',
+                uniqueName: ''
+            },
+            associated_context: {
+                release_id: '',
+                indexOfInterest: 0
+            }
         };
 
         approvers.forEach(approver => {
             if (approver.info.id === work_item_stakeholder[0]) {
-                work_item_stakeholder_info.displayName = approver.info.displayName;
-                work_item_stakeholder_info.uniqueName = approver.info.uniqueName;
+                work_item_info.owner_info.displayName = approver.info.displayName;
+                work_item_info.owner_info.uniqueName = approver.info.uniqueName;
             }
         });
 
-        const associated_context = JSON.stringify({
-            release_id: release.id,
-            indexOfInterest: indexOfInterest
+        work_item_info.associated_context.release_id = release.id;
+        work_item_info.associated_context.indexOfInterest = indexOfInterest;
+
+        return Promise.all([
+            work_item_info,
+            approvers,
+            api.getArtifacts(process.env.BUILD_BUILDID, process.env.SYSTEM_TEAMPROJECT),
+            connection.getBuildApi()
+        ]);
+    }).then(results => {
+        const [ work_item_info, approvers, artifacts, api ] = results;
+
+        const promise_values = [
+            work_item_info,
+            approvers,
+            artifacts,
+            connection.getWorkItemTrackingApi()
+        ];
+
+        artifacts.forEach(artifact => {
+            console.log(`Artifact Name: ${artifact.name}`);
+            promise_values.push(api.getArtifactContentZip(process.env.BUILD_BUILDID, artifact.name, process.env.SYSTEM_TEAMPROJECT));
         });
         
+        return Promise.all(promise_values);
+    }).then(results => {
+        const work_item_info = results[0];
+        const approvers = results[1];
+        const artifacts = results[2];
+        const work_item_tracking_api = results[3];
+        const artifact_zips = [];
+        
+        for (let i = 4; i < results.length; i++) {
+            artifact_zips.push(results[i]);
+        }
+
+        const promise_values = [
+            work_item_info,
+            approvers,
+            connection.getWorkItemTrackingApi()
+            // artifacts
+        ];
+        
+        artifacts.forEach((artifact, i) => {
+            promise_values.push(work_item_tracking_api.createAttachment(null, artifact_zips[i], `${artifact.name}.zip`));
+        });
+        
+        return Promise.all(promise_values);
+    }).then(results => {
+        const work_item_info = results[0];
+        const approvers = results[1];
+        const api = results[2];
+        // const artifacts = results[3];
+
+        const attachments = [];
+        
+        for (let i = 3; i < results.length; i++) {
+            attachments.push(results[i]);
+        }
+
+        const associated_context = work_item_info.associated_context;
+        const work_item_stakeholder_info = work_item_info.owner_info;
+
+        const pre_work_item_ops = [
+            {
+                "op": "add",
+                "path": "/fields/System.Title",
+                "value": `Pre-Approval for ${tool_name}, ${tool_version}`
+            }, {
+                "op": "add",
+                "path": "/fields/Associated Context",
+                "value": associated_context
+            }, {
+                "op": "replace",
+                "path": "/fields/System.AssignedTo",
+                "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
+            }
+        ];
+        const post_work_item_ops = [
+            {
+                "op": "add",
+                "path": "/fields/System.Title",
+                "value": `Post-Approval for ${tool_name}, ${tool_version}`
+            }, {
+                "op": "add",
+                "path": "/fields/Associated Context",
+                "value": associated_context
+            }, {
+                "op": "replace",
+                "path": "/fields/System.AssignedTo",
+                "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
+            }
+        ];
+
+        attachments.forEach(attachment => {
+            const op = {
+                "op": "add",
+                "path": "/relations/-",
+                "value": {
+                    "rel": "AttachedFile",
+                    "url": attachment.url,
+                    "attributes": {
+                        "comment": `Attachment Id: ${attachment.id}`
+                    }
+                }
+            };
+            pre_work_item_ops.push(op);
+            post_work_item_ops.push(op);
+        });
+
         return Promise.all([
-            api.createWorkItem(null, [
-                {
-                    "op": "add",
-                    "path": "/fields/System.Title",
-                    "value": `Pre-Approval for ${tool_name}, ${tool_version}`
-                }, {
-                    "op": "add",
-                    "path": "/fields/Associated Context",
-                    "value": associated_context
-                }, {
-                    "op": "replace",
-                    "path": "/fields/System.AssignedTo",
-                    "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
-                }
-            ], process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
-            api.createWorkItem(null, [
-                {
-                    "op": "add",
-                    "path": "/fields/System.Title",
-                    "value": `Post-Approval for ${tool_name}, ${tool_version}`
-                }, {
-                    "op": "add",
-                    "path": "/fields/Associated Context",
-                    "value": associated_context
-                }, {
-                    "op": "replace",
-                    "path": "/fields/System.AssignedTo",
-                    "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
-                }
-            ], process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
+            api.createWorkItem(
+                null, pre_work_item_ops, process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
+            api.createWorkItem(
+                null, post_work_item_ops, process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
             approvers
         ]); 
     }).then(results => {

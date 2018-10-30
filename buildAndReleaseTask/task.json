@@ -11,8 +11,8 @@
     "author": "Harish S/O Balamurugan",
     "version": {
         "Major": 1,
-        "Minor": 6,
-        "Patch": 6
+        "Minor": 9,
+        "Patch": 2
     },
     "runsOn": [
         "Agent"
