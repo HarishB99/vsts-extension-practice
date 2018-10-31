@@ -7,6 +7,13 @@ try {
     console.log('[i] Executing task: Started');
     console.log();
     console.log('[i] Storing input variables: Started');
+
+    const team_foundation_server_uri = task.getVariable('system.teamfoundationserveruri');
+    const team_project_name = task.getVariable('system.teamproject');
+    const build_id = task.getVariable('build.buildid');
+    const release_id = task.getVariable('release.releaseid');
+    const release_environment_name = task.getVariable('release.environmentname');
+
         let pre_primary_approvers = null;
         let pre_secondary_approvers = null;
         let pre_approval_timeout = null;
@@ -43,11 +50,11 @@ try {
     console.log();
     const authHandler = azure_devops_api.getBearerHandler(
         task.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
-    const connection = new azure_devops_api.WebApi(process.env.SYSTEM_TEAMFOUNDATIONSERVERURI, authHandler);
+    const connection = new azure_devops_api.WebApi(team_foundation_server_uri, authHandler);
     connection.getReleaseApi().then(api => {
         console.log(`[i] Retrieve release info: Started`);
         return Promise.all([
-            api.getRelease(process.env.SYSTEM_TEAMPROJECT, parseInt(process.env.RELEASE_RELEASEID)),
+            api.getRelease(team_project_name, parseInt(release_id)),
             connection.getReleaseApi()
         ]);
     }).then(results => {
@@ -59,7 +66,7 @@ try {
         let indexOfInterest = 0;
         for (let i = 0; i < release.environments.length; i++) {
             const environment = release.environments[i];
-            if (environment.name === process.env.RELEASE_ENVIRONMENTNAME) {
+            if (environment.name === release_environment_name) {
                 indexOfInterest = ++i;
                 break;
             }
@@ -133,24 +140,24 @@ try {
             release.environments[indexOfInterest].postApprovalsSnapshot.approvals = postApprovalsArray;
         }
         // console.log(`[i] Information to be updated: ${JSON.stringify(release)}`);
-        console.log('[i] Update approvals: Started');
-        // return secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id)
+        console.log('[i] Update approvals using release info retrieved: Started');
+        // return secondApi.updateRelease(release, team_project_name, release.id)
         return Promise.all([
-            secondApi.updateRelease(release, process.env.SYSTEM_TEAMPROJECT, release.id),
+            secondApi.updateRelease(release, team_project_name, release.id),
             connection.getBuildApi()
         ]);
     }).then(results => {
         const [ release, api ] = results;
         
         // console.log(`[i] Updated release: ${JSON.stringify(release)}`);
-        console.log(`[+] Update approvals: Complete`);
+        console.log(`[+] Update approvals using release info retrieved: Complete`);
         console.log();
         console.log(`[i] Create work item: Started`);
 
         let indexOfInterest = 0;
         for (let i = 0; i < release.environments.length; i++) {
             const environment = release.environments[i];
-            if (environment.name === process.env.RELEASE_ENVIRONMENTNAME) {
+            if (environment.name === release_environment_name) {
                 indexOfInterest = ++i;
                 break;
             }
@@ -196,7 +203,7 @@ try {
         return Promise.all([
             work_item_info,
             approvers,
-            api.getArtifacts(process.env.BUILD_BUILDID, process.env.SYSTEM_TEAMPROJECT),
+            api.getArtifacts(build_id, team_project_name),
             connection.getBuildApi()
         ]);
     }).then(results => {
@@ -210,8 +217,7 @@ try {
         ];
 
         artifacts.forEach(artifact => {
-            console.log(`Artifact Name: ${artifact.name}`);
-            promise_values.push(api.getArtifactContentZip(process.env.BUILD_BUILDID, artifact.name, process.env.SYSTEM_TEAMPROJECT));
+            promise_values.push(api.getArtifactContentZip(build_id, artifact.name, team_project_name));
         });
         
         return Promise.all(promise_values);
@@ -230,7 +236,6 @@ try {
             work_item_info,
             approvers,
             connection.getWorkItemTrackingApi()
-            // artifacts
         ];
         
         artifacts.forEach((artifact, i) => {
@@ -242,7 +247,6 @@ try {
         const work_item_info = results[0];
         const approvers = results[1];
         const api = results[2];
-        // const artifacts = results[3];
 
         const attachments = [];
         
@@ -302,16 +306,16 @@ try {
 
         return Promise.all([
             api.createWorkItem(
-                null, pre_work_item_ops, process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
+                null, pre_work_item_ops, team_project_name, 'Feature', false, false, false),
             api.createWorkItem(
-                null, post_work_item_ops, process.env.SYSTEM_TEAMPROJECT, 'Feature', false, false, false),
+                null, post_work_item_ops, team_project_name, 'Feature', false, false, false),
             approvers
         ]); 
     }).then(results => {
         const [ preWorkItem, postWorkItem, approvers ] = results;
 
-        console.log(`[i] Pre Work Item created: ${JSON.stringify(preWorkItem)}`);
-        console.log(`[i] Post Work Item created: ${JSON.stringify(postWorkItem)}`);
+        // console.log(`[i] Pre Work Item created: ${JSON.stringify(preWorkItem)}`);
+        // console.log(`[i] Post Work Item created: ${JSON.stringify(postWorkItem)}`);
         console.log(`[+] Create work item: Complete`);
         console.log();
         console.log(`[i] Send email: Started`);
@@ -344,7 +348,7 @@ try {
                 subject: `Pending ${approver.type}-Approval for ${tool_name}, Version ${tool_version}`,
                 html: `Dear ${approver.info.displayName},` + 
                     `<br/>` + 
-                    `<br/>This email was sent to inform you that there is a pending ${approver.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${process.env.SYSTEM_TEAMPROJECT}.` + 
+                    `<br/>This email was sent to inform you that there is a pending ${approver.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${team_project_name}.` + 
                     `<br/>` + 
                     `<br/>Link to approve release: <a href="${approval_link}">${approval_link}</a>` + 
                     `<br/>` + 
