@@ -18,6 +18,7 @@
                 .then(function(service) {
                     return service.getFieldValue("Associated Context");
                 }).then(function(value) {
+                    console.log('release_info: ', value);
                     var release_info = JSON.parse(value);
                     console.log('release_info: ', release_info);
                     // return release_mgmt_client.getApproval(VSS.getWebContext().project.id, parsed_approval_id);

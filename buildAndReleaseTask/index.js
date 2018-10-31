@@ -254,8 +254,9 @@ try {
             attachments.push(results[i]);
         }
 
-        const associated_context = work_item_info.associated_context;
+        const associated_context = JSON.stringify(work_item_info.associated_context);
         const work_item_stakeholder_info = work_item_info.owner_info;
+        console.log(`associated_context: ${associated_context}`);
 
         const pre_work_item_ops = [
             {
