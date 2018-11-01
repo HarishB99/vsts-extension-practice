@@ -8,50 +8,146 @@
     <script>
         VSS.init();
 
-        VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services",
-                    "TFS/Build/RestClient"],
-            function(vss_service, release_mgmt_api, work_item_track_services, build_api) {
-                var release_mgmt_client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
-                var build_client = vss_service.getCollectionClient(build_api.BuildHttpClient2);
+        VSS.ready(function() {
+            VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", "TFS/WorkItemTracking/RestClient", "VSS/Identities/RestClient"],
+                function(vss_service, release_mgmt_api, work_item_track_services, build_api, Controls, StatusIndicator,work_item_tracking_api, identities_api) {
+                    var artifacts_container = document.getElementById('artifacts');
+                    var wait_control = Controls.create(StatusIndicator.WaitControl, artifacts_container, {
+                        cancellable: false
+                    });
 
-                work_item_track_services.WorkItemFormService.getService()
-                .then(function(service) {
-                    return service.getFieldValue("Associated Context");
-                }).then(function(value) {
-                    console.log('release_info: ', value);
-                    var release_info = JSON.parse(value);
-                    console.log('release_info: ', release_info);
-                    // return release_mgmt_client.getApproval(VSS.getWebContext().project.id, parsed_approval_id);
-                    // return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
-                    return release_mgmt_client.getRelease(VSS.getWebContext().project.id, release_info.release_id);
-                }).then(function(release) {
-                    console.log(`Release: `, release);
-                    return build_client.getArtifacts(release.artifacts["0"].definitionReference.version.id, VSS.getWebContext().project.id, 'Build');
-                }).then(function(artifacts) {
-                    console.log('Artifacts: ', artifacts);
-                    var artifacts_display = document.getElementById('artifacts');
-                    for (var i = 0; i < artifacts.length; i++) {
-                        var current_artefact = artifacts[i];
-                        var downloadUrl = current_artefact.resource.downloadUrl;
-                        var link = document.createElement('a');
-                            link.href = downloadUrl;
-                            link.innerHTML = downloadUrl;
-                        artifacts_display.appendChild(link);
-                        if (i !== artifacts.length - 1) {
-                            artifacts_display.appendChild(document.createElement('br'));
+                    wait_control.startWait();
+
+                    var release_mgmt_client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
+                    var build_client = vss_service.getCollectionClient(build_api.BuildHttpClient2);
+                    var work_item_tracking_client = vss_service.getCollectionClient(work_item_tracking_api.WorkItemTrackingHttpClient2_2);
+                    var identities_client = vss_service.getCollectionClient(identities_api.IdentitiesHttpClient);
+
+                    work_item_track_services.WorkItemFormService.getService()
+                    .then(function(service) {
+                        return Promise.all([
+                            service.getFieldValue("Associated Context"),
+                            service.getFieldValue("System.Title"),
+                            service.getFieldValue("System.AssignedTo")
+                        ]);
+                    }).then(function(results) {
+                        var release_info = JSON.parse(results[0]);
+                        var approvalType = results[1].split("-")[0].toLowerCase();
+                        var user_id = results[2].split("<")[1].split(">")[0];
+
+                        return Promise.all([
+                            release_info,
+                            approvalType,
+                            user_id,
+                            release_mgmt_client.getRelease(VSS.getWebContext().project.id, release_info.release_id)
+                        ]);
+                    }).then(function(results) {
+                        var release_info = results[0];
+                        var approvalType = results[1];
+                        var user_id = results[2];
+                        var release = results[3];
+
+                        console.log(`Release: `, release);
+                        var br = document.createElement("br");
+                        var approveBtn = document.createElement("button");
+                            approveBtn.id = "approve";
+                            approveBtn.innerHTML = "Approve";
+                            approveBtn.style.backgroundColor = "yellowgreen";
+                            approveBtn.style.color = "black";
+                            approveBtn.addEventListener("click", function() {
+                                if (approvalType === "pre") {
+                                    var preDeployApprovals = release.environments[release_info.indexOfInterest].preDeployApprovals;
+                                    for (let i = 0; i < preDeployApprovals.length; i++) {
+                                        const approval = preDeployApprovals[i];
+                                        if (approval.approver.uniqueName === user_id) {
+                                            approval.approvedBy = user_id;
+                                            approval.status = 'approved';
+                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            .then(approval => {
+                                                console.log('Updated approval: ', approval);
+                                            });
+                                        }
+                                    }
+                                } else if (approvalType === "post") {
+                                    var postDeployApprovals = release.environments[release_info.indexOfInterest].postDeployApprovals;
+                                    for (let i = 0; i < postDeployApprovals.length; i++) {
+                                        const approval = postDeployApprovals[i];
+                                        if (approval.approver.uniqueName === user_id) {
+                                            approval.approvedBy = user_id;
+                                            approval.status = 'approved';
+                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            .then(approval => {
+                                                console.log('Updated approval: ', approval);
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+                        var rejectBtn = document.createElement("button");
+                            rejectBtn.id = "reject";
+                            rejectBtn.innerHTML = "Reject";
+                            rejectBtn.style.backgroundColor = "firebrick";
+                            rejectBtn.style.color = "white";
+                            rejectBtn.addEventListener("click", function() {
+                                if (approvalType === "pre") {
+                                    var preDeployApprovals = release.environments[release_info.indexOfInterest].preDeployApprovals;
+                                    for (let i = 0; i < preDeployApprovals.length; i++) {
+                                        const approval = preDeployApprovals[i];
+                                        if (approval.approver.uniqueName === user_id) {
+                                            approval.approvedBy = user_id;
+                                            approval.status = 'rejected';
+                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            .then(approval => {
+                                                console.log('Updated approval: ', approval);
+                                            });
+                                        }
+                                    }
+                                } else if (approvalType === "post") {
+                                    var postDeployApprovals = release.environments[release_info.indexOfInterest].postDeployApprovals;
+                                    for (let i = 0; i < postDeployApprovals.length; i++) {
+                                        const approval = postDeployApprovals[i];
+                                        if (approval.approver.uniqueName === user_id) {
+                                            approval.approvedBy = user_id;
+                                            approval.status = 'rejected';
+                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            .then(approval => {
+                                                console.log('Updated approval: ', approval);
+                                            });
+                                        }
+                                    }
+                                }
+                            });
+                        document.getElementById("buttons-container").appendChild(rejectBtn);
+                        document.getElementById("buttons-container").appendChild(approveBtn);
+                        return build_client.getArtifacts(release.artifacts["0"].definitionReference.version.id, VSS.getWebContext().project.id, 'Build');
+                    }).then(function(artifacts) {
+                        console.log('Artifacts: ', artifacts);
+                        wait_control.endWait();
+                        var artifacts_display = artifacts_container;
+                        for (var i = 0; i < artifacts.length; i++) {
+                            var current_artefact = artifacts[i];
+                            var downloadUrl = current_artefact.resource.downloadUrl;
+                            var link = document.createElement('a');
+                                link.href = downloadUrl;
+                                link.innerHTML = current_artefact.name;
+                            artifacts_display.appendChild(link);
+                            if (i !== artifacts.length - 1) {
+                                artifacts_display.appendChild(document.createElement('br'));
+                            }
                         }
-                    }
-                    return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
-                }).then(function (approvals) {
-                    console.log('Approvals: ', approvals);
+                        return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
+                    }).then(function(approvals) {
+                        console.log('Approvals: ', approvals);
+                    });
                 });
-            });
+        });
     </script>
 </head>
 <body>
     <div id="artifacts"></div>
-    <!-- <br/>
-    <button id="reject">Reject</button>
-    <button id="approve">Approve</button> -->
+    <br/>
+    <div id="buttons-container"></div>
+    <!-- <button id="reject" style="background-color: firebrick; color: white">Reject</button>
+    <button id="approve" style="background-color: yellowgreen; color: black">Approve</button> -->
 </body>
 </html>
