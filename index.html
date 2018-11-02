@@ -45,6 +45,8 @@
                         var approvalType = results[1];
                         var user_id = results[2];
                         var release = results[3];
+                        // Pre-Deploy or Post-Deploy Approvals
+                        var approvals = (approvalType === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
 
                         console.log(`Release: `, release);
                         var br = document.createElement("br");
@@ -54,38 +56,21 @@
                             approveBtn.style.backgroundColor = "yellowgreen";
                             approveBtn.style.color = "black";
                             approveBtn.addEventListener("click", function() {
-                                if (approvalType === "pre") {
-                                    var preDeployApprovals = release.environments[release_info.indexOfInterest].preDeployApprovals;
-                                    for (let i = 0; i < preDeployApprovals.length; i++) {
-                                        const approval = preDeployApprovals[i];
-                                        if (approval.approver.uniqueName === user_id) {
+                                for (let i = 0; i < approvals.length; i++) {
+                                    const approval = approvals[i];
+                                    if (approval.approver.uniqueName === user_id) {
+                                        if (approval.status === "approved") {
+                                            alert("Already approved");
+                                        } else {
                                             approval.approvedBy = user_id;
                                             approval.status = 'approved';
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
                                                 if (approval && approval.id) {
-                                                    // Success
+                                                    alert("Approval Operation: Success");
                                                 } else {
-                                                    // Failure
-                                                }
-                                            });
-                                        }
-                                    }
-                                } else if (approvalType === "post") {
-                                    var postDeployApprovals = release.environments[release_info.indexOfInterest].postDeployApprovals;
-                                    for (let i = 0; i < postDeployApprovals.length; i++) {
-                                        const approval = postDeployApprovals[i];
-                                        if (approval.approver.uniqueName === user_id) {
-                                            approval.approvedBy = user_id;
-                                            approval.status = 'approved';
-                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
-                                            .then(approval => {
-                                                console.log('Updated approval: ', approval);
-                                                if (approval && approval.id) {
-                                                    // Success
-                                                } else {
-                                                    // Failure
+                                                    alert("Approval Operation: Failure");
                                                 }
                                             });
                                         }
@@ -98,38 +83,21 @@
                             rejectBtn.style.backgroundColor = "firebrick";
                             rejectBtn.style.color = "white";
                             rejectBtn.addEventListener("click", function() {
-                                if (approvalType === "pre") {
-                                    var preDeployApprovals = release.environments[release_info.indexOfInterest].preDeployApprovals;
-                                    for (let i = 0; i < preDeployApprovals.length; i++) {
-                                        const approval = preDeployApprovals[i];
-                                        if (approval.approver.uniqueName === user_id) {
+                                for (let i = 0; i < approvals.length; i++) {
+                                    const approval = approvals[i];
+                                    if (approval.approver.uniqueName === user_id) {
+                                        if (approval.status === "approved") {
+                                            alert("Already approved");
+                                        } else {
                                             approval.approvedBy = user_id;
                                             approval.status = 'rejected';
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
                                                 if (approval && approval.id) {
-                                                    // Success
+                                                    alert("Reject Operation: Success");
                                                 } else {
-                                                    // Failure
-                                                }
-                                            });
-                                        }
-                                    }
-                                } else if (approvalType === "post") {
-                                    var postDeployApprovals = release.environments[release_info.indexOfInterest].postDeployApprovals;
-                                    for (let i = 0; i < postDeployApprovals.length; i++) {
-                                        const approval = postDeployApprovals[i];
-                                        if (approval.approver.uniqueName === user_id) {
-                                            approval.approvedBy = user_id;
-                                            approval.status = 'rejected';
-                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
-                                            .then(approval => {
-                                                console.log('Updated approval: ', approval);
-                                                if (approval && approval.id) {
-                                                    // Success
-                                                } else {
-                                                    // Failure
+                                                    alert("Reject Operation: Failure");
                                                 }
                                             });
                                         }
