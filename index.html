@@ -9,8 +9,8 @@
         VSS.init();
 
         VSS.ready(function() {
-            VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", "TFS/WorkItemTracking/RestClient", "VSS/Identities/RestClient"],
-                function(vss_service, release_mgmt_api, work_item_track_services, build_api, Controls, StatusIndicator,work_item_tracking_api, identities_api) {
+            VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", "TFS/WorkItemTracking/RestClient"],
+                function(vss_service, release_mgmt_api, work_item_track_services, build_api, Controls, StatusIndicator, work_item_tracking_api) {
                     var artifacts_container = document.getElementById('artifacts');
                     var wait_control = Controls.create(StatusIndicator.WaitControl, artifacts_container, {
                         cancellable: false
@@ -21,7 +21,6 @@
                     var release_mgmt_client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
                     var build_client = vss_service.getCollectionClient(build_api.BuildHttpClient2);
                     var work_item_tracking_client = vss_service.getCollectionClient(work_item_tracking_api.WorkItemTrackingHttpClient2_2);
-                    var identities_client = vss_service.getCollectionClient(identities_api.IdentitiesHttpClient);
 
                     work_item_track_services.WorkItemFormService.getService()
                     .then(function(service) {
@@ -65,6 +64,11 @@
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
+                                                if (approval && approval.id) {
+                                                    // Success
+                                                } else {
+                                                    // Failure
+                                                }
                                             });
                                         }
                                     }
@@ -78,6 +82,11 @@
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
+                                                if (approval && approval.id) {
+                                                    // Success
+                                                } else {
+                                                    // Failure
+                                                }
                                             });
                                         }
                                     }
@@ -99,6 +108,11 @@
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
+                                                if (approval && approval.id) {
+                                                    // Success
+                                                } else {
+                                                    // Failure
+                                                }
                                             });
                                         }
                                     }
@@ -112,6 +126,11 @@
                                             release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
+                                                if (approval && approval.id) {
+                                                    // Success
+                                                } else {
+                                                    // Failure
+                                                }
                                             });
                                         }
                                     }
@@ -123,28 +142,73 @@
                     }).then(function(artifacts) {
                         console.log('Artifacts: ', artifacts);
                         wait_control.endWait();
-                        var artifacts_display = artifacts_container;
                         for (var i = 0; i < artifacts.length; i++) {
                             var current_artefact = artifacts[i];
                             var downloadUrl = current_artefact.resource.downloadUrl;
-                            var link = document.createElement('a');
-                                link.href = downloadUrl;
-                                link.innerHTML = current_artefact.name;
-                            artifacts_display.appendChild(link);
+                            var tr = document.createElement('tr');
+                                var td = document.createElement('td');
+                                    var link = document.createElement('a');
+                                        // link.href = downloadUrl;
+                                        link.innerHTML = current_artefact.name;
+                                    td.appendChild(link);
+                                tr.style.cursor = "pointer";
+                                tr.addEventListener('click', function() {
+                                    window.open(downloadUrl, "_blank");
+                                });
+                                tr.appendChild(td);
+                            
+                            artifacts_container.children[0].children[0].appendChild(tr);
                             if (i !== artifacts.length - 1) {
-                                artifacts_display.appendChild(document.createElement('br'));
+                                artifacts_container.appendChild(document.createElement('br'));
                             }
                         }
                         return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
                     }).then(function(approvals) {
                         console.log('Approvals: ', approvals);
+                        return work_item_track_services.WorkItemFormService.getService();
+                    }).then(function (service) {
+                        return Promise.all([
+                            service.getFields(),
+                            service.getFieldValue("Attached File Count"),
+                            service.getFieldValue("Hyperlink Count"),
+                            service.getFieldValue("Remote Link Count"),
+                            service.getFieldValue("Related Links"),
+                            service.getFieldValue("Attached Files"),
+                            service.getFieldValue("Linked Files"),
+                            service.getFieldValue("BIS Links"),
+                            service.getFieldValue("Related Link Count")
+                        ]);
+                    }).then(function (results) {
+                        var fields = results[0];
+                        var attachedFileCount = results[1];
+                        var relatedLinks = results[4];
+                        var attachedFiles = results[5];
+                        var linkedFiles = results[6];
+                        var bisLinks = results[7];
+                        console.log('Fields: ', fields);
+                        console.log('Attached File Count: ', attachedFileCount);
+                        console.log('Related Links: ', relatedLinks);
+                        console.log('Attached Files: ', attachedFiles);
+                        console.log('Linked Files: ', linkedFiles);
+                        console.log('BIS Links: ', bisLinks);
                     });
                 });
         });
     </script>
 </head>
-<body>
-    <div id="artifacts"></div>
+<body style="padding: 2.5%;">
+    <div id="artifacts" style="width: 100%; height: 75px; overflow: auto;">
+        <table border="1" cellpadding="5" style="width: 100%;">
+            <tbody>
+                <!-- <tr><td>Hello</td></tr>
+                <tr><td>World</td></tr>
+                <tr><td>Hello</td></tr>
+                <tr><td>World</td></tr>
+                <tr><td>Hello</td></tr>
+                <tr><td>World</td></tr> -->
+            </tbody>
+        </table>
+    </div>
     <br/>
     <div id="buttons-container"></div>
     <!-- <button id="reject" style="background-color: firebrick; color: white">Reject</button>
