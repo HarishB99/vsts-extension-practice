@@ -44,6 +44,7 @@ try {
         const smtp_verbose = task.getBoolInput('smtp_verbose', true);
         const tool_name = task.getInput('tool_name', true);
         const tool_version = task.getInput('tool_version', true);
+        const smtp_enabled = task.getBoolInput('smtp_enabled', true);
 
         const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true));
     console.log('[+] Storing input variables: Complete');
@@ -186,7 +187,8 @@ try {
             },
             associated_context: {
                 release_id: '',
-                indexOfInterest: 0
+                indexOfInterest: 0,
+                attachments: []
             }
         };
 
@@ -252,11 +254,13 @@ try {
         
         for (let i = 3; i < results.length; i++) {
             attachments.push(results[i]);
+            work_item_info.associated_context.attachments.push(results[i]);
         }
 
+        // console.log(`work_item_info: ${JSON.stringify(work_item_info)}`);
         const associated_context = JSON.stringify(work_item_info.associated_context);
         const work_item_stakeholder_info = work_item_info.owner_info;
-        console.log(`associated_context: ${associated_context}`);
+        // console.log(`associated_context: ${associated_context}`);
 
         const pre_work_item_ops = [
             {
@@ -320,45 +324,50 @@ try {
         console.log(`[+] Create work item: Complete`);
         console.log();
         console.log(`[i] Send email: Started`);
-        const transportOptions = {
-            host: smtp_host,
-            port: smtp_port,
-            auth: {
-                user: smtp_username,
-                pass: smtp_password
-            },
-            secure: true,
-            logger: false
-        };
-
-        if (smtp_verbose) {
-            transportOptions.logger = true;
+        if (smtp_enabled) {
+            const transportOptions = {
+                host: smtp_host,
+                port: smtp_port,
+                auth: {
+                    user: smtp_username,
+                    pass: smtp_password
+                },
+                secure: true,
+                logger: false
+            };
+    
+            if (smtp_verbose) {
+                transportOptions.logger = true;
+            }
+    
+            const server = mailer.createTransport(transportOptions);
+    
+            const email_promises = [];
+    
+            const pre_approval_link = preWorkItem._links.html.href;
+            const post_approval_link = postWorkItem._links.html.href;
+            approvers.forEach(approver => {
+                const approval_link = (approver.type === 'Pre') ? pre_approval_link : post_approval_link;
+                email_promises.push(server.sendMail({
+                    from: smtp_username,
+                    to: approver.info.uniqueName,
+                    subject: `Pending ${approver.type}-Approval for ${tool_name}, Version ${tool_version}`,
+                    html: `Dear ${approver.info.displayName},` + 
+                        `<br/>` + 
+                        `<br/>This email was sent to inform you that there is a pending ${approver.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${team_project_name}.` + 
+                        `<br/>` + 
+                        `<br/>Link to approve release: <a href="${approval_link}">${approval_link}</a>` + 
+                        `<br/>` + 
+                        `<br/>Thank you.` + 
+                        `<br/>Harish Release Tools.`
+                }));
+            });
+    
+            return Promise.all(email_promises);
+        } else {
+            console.log('[i] Emails will not be sent as email feature has been disabled by user.');
+            return console.log('[i] Skipping this feature...');
         }
-
-        const server = mailer.createTransport(transportOptions);
-
-        const email_promises = [];
-
-        const pre_approval_link = preWorkItem._links.html.href;
-        const post_approval_link = postWorkItem._links.html.href;
-        approvers.forEach(approver => {
-            const approval_link = (approver.type === 'Pre') ? pre_approval_link : post_approval_link;
-            email_promises.push(server.sendMail({
-                from: smtp_username,
-                to: approver.info.uniqueName,
-                subject: `Pending ${approver.type}-Approval for ${tool_name}, Version ${tool_version}`,
-                html: `Dear ${approver.info.displayName},` + 
-                    `<br/>` + 
-                    `<br/>This email was sent to inform you that there is a pending ${approver.type.toLowerCase()}-approval from you for ${tool_name}, version ${tool_version}, which has been uploaded to an Azure DevOps Project you are involved in, ${team_project_name}.` + 
-                    `<br/>` + 
-                    `<br/>Link to approve release: <a href="${approval_link}">${approval_link}</a>` + 
-                    `<br/>` + 
-                    `<br/>Thank you.` + 
-                    `<br/>Harish Release Tools.`
-            }));
-        });
-
-        return Promise.all(email_promises);
     }).then(() => {
         console.log(`[+] Send email: Complete`);
         console.log();

@@ -11,6 +11,8 @@
         VSS.ready(function() {
             VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", "TFS/WorkItemTracking/RestClient"],
                 function(vss_service, release_mgmt_api, work_item_track_services, build_api, Controls, StatusIndicator, work_item_tracking_api) {
+
+                    console.log('Web context: ', VSS.getWebContext());
                     var artifacts_container = document.getElementById('artifacts');
                     var wait_control = Controls.create(StatusIndicator.WaitControl, artifacts_container, {
                         cancellable: false
@@ -26,25 +28,45 @@
                     .then(function(service) {
                         return Promise.all([
                             service.getFieldValue("Associated Context"),
-                            service.getFieldValue("System.Title"),
-                            service.getFieldValue("System.AssignedTo")
+                            service.getFieldValue("System.Title")
                         ]);
                     }).then(function(results) {
                         var release_info = JSON.parse(results[0]);
                         var approvalType = results[1].split("-")[0].toLowerCase();
-                        var user_id = results[2].split("<")[1].split(">")[0];
 
                         return Promise.all([
                             release_info,
                             approvalType,
-                            user_id,
                             release_mgmt_client.getRelease(VSS.getWebContext().project.id, release_info.release_id)
                         ]);
                     }).then(function(results) {
                         var release_info = results[0];
                         var approvalType = results[1];
-                        var user_id = results[2];
-                        var release = results[3];
+                        var release = results[2];
+                        var user_id = VSS.getWebContext().user.id;
+                        console.log('Release info: ', release_info);
+                        console.log('User id: ', user_id);
+
+                        for (var i = 0; i < release_info.attachments.length; i++) {
+                            var attachment = release_info.attachments[i];
+                            var downloadUrl = attachment.url;
+                            var tr = document.createElement('tr');
+                                var td = document.createElement('td');
+                                    var link = document.createElement('a');
+                                        link.innerHTML = downloadUrl.split("fileName=")[1];
+                                    td.appendChild(link);
+                                tr.style.cursor = "pointer";
+                                tr.addEventListener('click', function() {
+                                    window.open(downloadUrl, "_blank");
+                                });
+                                tr.appendChild(td);
+                            
+                            artifacts_container.children[0].children[0].appendChild(tr);
+                            if (i !== artifacts.length - 1) {
+                                artifacts_container.appendChild(document.createElement('br'));
+                            }
+                        }
+
                         // Pre-Deploy or Post-Deploy Approvals
                         var approvals = (approvalType === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
 
@@ -58,7 +80,7 @@
                             approveBtn.addEventListener("click", function() {
                                 for (let i = 0; i < approvals.length; i++) {
                                     const approval = approvals[i];
-                                    if (approval.approver.uniqueName === user_id) {
+                                    if (approval.approver.id === user_id) {
                                         if (approval.status === "approved") {
                                             alert("Already approved");
                                         } else {
@@ -85,7 +107,7 @@
                             rejectBtn.addEventListener("click", function() {
                                 for (let i = 0; i < approvals.length; i++) {
                                     const approval = approvals[i];
-                                    if (approval.approver.uniqueName === user_id) {
+                                    if (approval.approver.id === user_id) {
                                         if (approval.status === "approved") {
                                             alert("Already approved");
                                         } else {
@@ -106,30 +128,31 @@
                             });
                         document.getElementById("buttons-container").appendChild(rejectBtn);
                         document.getElementById("buttons-container").appendChild(approveBtn);
+                        wait_control.endWait();
                         return build_client.getArtifacts(release.artifacts["0"].definitionReference.version.id, VSS.getWebContext().project.id, 'Build');
                     }).then(function(artifacts) {
                         console.log('Artifacts: ', artifacts);
-                        wait_control.endWait();
-                        for (var i = 0; i < artifacts.length; i++) {
-                            var current_artefact = artifacts[i];
-                            var downloadUrl = current_artefact.resource.downloadUrl;
-                            var tr = document.createElement('tr');
-                                var td = document.createElement('td');
-                                    var link = document.createElement('a');
-                                        // link.href = downloadUrl;
-                                        link.innerHTML = current_artefact.name;
-                                    td.appendChild(link);
-                                tr.style.cursor = "pointer";
-                                tr.addEventListener('click', function() {
-                                    window.open(downloadUrl, "_blank");
-                                });
-                                tr.appendChild(td);
+                        // for (var i = 0; i < artifacts.length; i++) {
+                        //     var current_artefact = artifacts[i];
+                        //     var downloadUrl = current_artefact.resource.downloadUrl;
+                        //     var tr = document.createElement('tr');
+                        //         var td = document.createElement('td');
+                        //             var link = document.createElement('a');
+                        //                 // link.href = downloadUrl;
+                        //                 link.innerHTML = current_artefact.name;
+                        //             td.appendChild(link);
+                        //         tr.style.cursor = "pointer";
+                        //         tr.addEventListener('click', function() {
+                        //             window.open(downloadUrl, "_blank");
+                        //         });
+                        //         tr.appendChild(td);
                             
-                            artifacts_container.children[0].children[0].appendChild(tr);
-                            if (i !== artifacts.length - 1) {
-                                artifacts_container.appendChild(document.createElement('br'));
-                            }
-                        }
+                        //     artifacts_container.children[0].children[0].appendChild(tr);
+                        //     if (i !== artifacts.length - 1) {
+                        //         artifacts_container.appendChild(document.createElement('br'));
+                        //     }
+                        // }
+                        
                         return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
                     }).then(function(approvals) {
                         console.log('Approvals: ', approvals);

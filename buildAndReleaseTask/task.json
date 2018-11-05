@@ -10,9 +10,9 @@
     ],
     "author": "Harish S/O Balamurugan",
     "version": {
-        "Major": 1,
-        "Minor": 9,
-        "Patch": 8
+        "Major": 2,
+        "Minor": 7,
+        "Patch": 0
     },
     "runsOn": [
         "Agent"
@@ -35,11 +35,6 @@
             "isExpanded": true
         },
         {
-            "name": "email",
-            "displayName": "Email Options",
-            "isExpanded": true
-        },
-        {
             "name": "preapproval",
             "displayName": "Pre-Approval",
             "isExpanded": true
@@ -48,6 +43,11 @@
             "name": "postapproval",
             "displayName": "Post-Approval",
             "isExpanded": true
+        },
+        {
+            "name": "email",
+            "displayName": "Email Options",
+            "isExpanded": false
         }
     ],
     "inputs": [
@@ -59,77 +59,6 @@
             "required": true,
             "groupName": "workitem",
             "helpMarkDown": "A user (NOT GROUP) who is also one of the approvers."
-        },
-        {
-            "name": "tool_name",
-            "type": "string",
-            "label": "Tool Name",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "The name of the tool / code you are uploading."
-        },
-        {
-            "name": "tool_version",
-            "type": "string",
-            "label": "Tool Version",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "The version of the tool / code you are uploading."
-        },
-        {
-            "name": "smtp_host",
-            "type": "string",
-            "label": "SMTP Server URL",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "The URL of the SMTP server to use."
-        },
-        {
-            "name": "smtp_port",
-            "type": "number",
-            "label": "SMTP Port Number",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "validation": {
-                "expression": "isInRange(value, 0, 65535)",
-                "message": "Please enter a valid port number."
-            },
-            "helpMarkDown": "The port number required by your smtp server."
-        },
-        {
-            "name": "smtp_username",
-            "type": "string",
-            "label": "Email Address",
-            "defaultValue": "",
-            "groupName": "email",
-            "validation": {
-                "expression": "isEmail(value)",
-                "message": "Please enter a valid email address."
-            },
-            "required": true,
-            "helpMarkDown": "The Username to use."
-        },
-        {
-            "name": "smtp_password",
-            "type": "string",
-            "label": "Password",
-            "defaultValue": "$(password)",
-            "groupName": "email",
-            "required": true,
-            "helpMarkDown": "The Password to use."
-        },
-        {
-            "name": "smtp_verbose",
-            "type": "boolean",
-            "label": "SMTP Verbose Mode Enabled",
-            "defaultValue": "false",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "If this is true, the email handler will log more verbose output"
         },
         {
             "name": "pre_primary_approvers",
@@ -210,6 +139,85 @@
             "defaultValue": "true",
             "groupName": "postapproval",
             "helpMarkDown": "If this is true, post-deployment approvals will be enabled."
+        },
+        {
+            "name": "smtp_enabled",
+            "type": "boolean",
+            "label": "Enabled",
+            "defaultValue": "false",
+            "groupName": "email",
+            "helpMarkDown": "If this is true, emails containing link to the work items created will be sent to all approvers."
+        },
+        {
+            "name": "tool_name",
+            "type": "string",
+            "label": "Tool Name",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The name of the tool / code you are uploading."
+        },
+        {
+            "name": "tool_version",
+            "type": "string",
+            "label": "Tool Version",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The version of the tool / code you are uploading."
+        },
+        {
+            "name": "smtp_host",
+            "type": "string",
+            "label": "SMTP Server URL",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "The URL of the SMTP server to use."
+        },
+        {
+            "name": "smtp_port",
+            "type": "number",
+            "label": "SMTP Port Number",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "email",
+            "validation": {
+                "expression": "isInRange(value, 0, 65535)",
+                "message": "Please enter a valid port number."
+            },
+            "helpMarkDown": "The port number required by your smtp server."
+        },
+        {
+            "name": "smtp_username",
+            "type": "string",
+            "label": "Email Address",
+            "defaultValue": "",
+            "groupName": "email",
+            "validation": {
+                "expression": "isEmail(value)",
+                "message": "Please enter a valid email address."
+            },
+            "required": true,
+            "helpMarkDown": "The Username to use."
+        },
+        {
+            "name": "smtp_password",
+            "type": "string",
+            "label": "Password",
+            "defaultValue": "$(password)",
+            "groupName": "email",
+            "required": true,
+            "helpMarkDown": "The Password to use."
+        },
+        {
+            "name": "smtp_verbose",
+            "type": "boolean",
+            "label": "SMTP Verbose Mode Enabled",
+            "defaultValue": "false",
+            "required": true,
+            "groupName": "email",
+            "helpMarkDown": "If this is true, the email handler will log more verbose output"
         }
     ],
     "execution": {
