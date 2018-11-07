@@ -12,15 +12,39 @@
             VSS.require([
                 "VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", 
                 "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", 
-                "TFS/WorkItemTracking/RestClient"
+                "TFS/WorkItemTracking/RestClient", "VSS/Controls/Menus"
             ], function(vss_service, release_mgmt_api, work_item_track_services, 
                 build_api, Controls, StatusIndicator, 
-                work_item_tracking_api) {
+                work_item_tracking_api, Menus) {
                     console.log('Web context: ', VSS.getWebContext());
 
                     // retrieve the 'div' element that will display all the attachments
                     var attachments_container = document.getElementById('attachments');
                     var buttons_container = document.getElementById("buttons-container");
+                    var menu_bar_container = document.getElementById("menu-bar");
+
+                    var menu_items = [
+                        { id: "new-file", text: "New File", icon: "icon-add", title: "Add a new file as attachment" },
+                        { id: "refresh", text: "Refresh", icon: "icon-refresh", title: "Refresh this section" }
+                    ];
+
+                    var menu_options = {
+                        items: menu_items,
+                        executeAction: function(args) {
+                            var command = args.get_commandName();
+                            console.log("args: ", args);
+                            switch(command) {
+                                case "refresh":
+                                    location.reload();
+                                    break;
+                                default:
+                                    alert("Unhandled action: " + command);
+                                    break;
+                            }
+                        }
+                    };
+
+                    var menu_bar = Controls.create(Menus.MenuBar, menu_bar_container, menu_options);
                     
                     // Retrieve the project id and user id (current user's) from 
                     // the webcontext of the extension for later 
@@ -58,6 +82,7 @@
 
                         // Parse out the JSON data in "Associated Context"
                         var release_info = JSON.parse(results[0]);
+                        var type = (release_info.type.toLowerCase() === 'pre') ? 'preDeploy' : 'postDeploy';
 
                         // Using the release id in the JSON data, 
                         // retrieve the release for which an approval / rejection 
@@ -67,7 +92,8 @@
                         // Promise chain
                         return Promise.all([
                             release_info,
-                            release_mgmt_client.getRelease(project_id, release_info.release_id)
+                            release_mgmt_client.getRelease(project_id, release_info.release_id),
+                            release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], type)
                         ]);
                     }).then(function(results) {
                         // Store the JSON data and release object 
@@ -75,6 +101,9 @@
                         // into the following variables
                         var release_info = results[0];
                         var release = results[1];
+                        var approvals = results[2];
+
+                        console.log('Approvals: ', approvals);
 
                         // Retrieve the approval type and attachments 
                         // from the JSON data
@@ -114,10 +143,29 @@
                                 tr.appendChild(td);
                             attachments_container.children[0].children[0].appendChild(tr);
                         }
+                        
+                        if (approvals.length < 1) {
+                            buttons_container.innerHTML = "There are no pending " + approval_type.toLowerCase() + "-deployment approvals for now.";
+                            wait_control.endWait();
+                            return work_item_track_services.WorkItemFormService.getService();
+                        }
 
                         // Based on the approval type, retrieve the appropriate approvals 
                         // to be approved / rejected.
-                        var approvals = (approval_type.toLowerCase() === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
+                        var approvals_from_release = (approval_type.toLowerCase() === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
+                        
+                        var approval_to_be_updated = null;
+
+                        for (var i = 0; i < approvals_from_release.length; i++) {
+                            var approval_from_release = approvals_from_release[i];
+                            for (var j = 0; j < approvals.length; j++) {
+                                var approval = approvals[j];
+                                if (approval.id === approval_from_release.id) {
+                                    approval_to_be_updated = approval;
+                                    break;
+                                }
+                            }
+                        }
 
                         console.log(`Release: `, release);
                         // Create the "Approve" and "Reject" buttons
@@ -127,26 +175,21 @@
                             approveBtn.style.backgroundColor = "yellowgreen";
                             approveBtn.style.color = "black";
                             approveBtn.addEventListener("click", function() {
-                                for (let i = 0; i < approvals.length; i++) {
-                                    const approval = approvals[i];
-                                    if (approval.approver.id === user_id) {
-                                        if (approval.status === "approved") {
-                                            alert(approval_type + "-Deploy Approval already approved");
-                                        } else {
-                                            approval.approvedBy = user_id;
-                                            approval.status = 'approved';
-                                            release_mgmt_client.updateReleaseApproval(approval, project_id, approval.id)
-                                            .then(approval => {
-                                                console.log('Updated approval: ', approval);
-                                                if (approval && approval.id) {
-                                                    alert(approval_type + "-Deploy Approval Operation: Success");
-                                                } else {
-                                                    alert(approval_type + "-Deploy Approval Operation: Failure");
-                                                }
-                                            });
-                                        }
+                                approval_to_be_updated.approvedBy = user_id;
+                                approval_to_be_updated.status = 'approved';
+                                release_mgmt_client.updateReleaseApproval(approval_to_be_updated, project_id, approval_to_be_updated.id)
+                                .then(approval => {
+                                    console.log('Updated approval: ', approval);
+                                    if (approval && approval.id) {
+                                        alert(approval_type + "-Deploy Approval Operation: Success");
+                                    } else {
+                                        alert(approval_type + "-Deploy Approval Operation: Failure");
                                     }
-                                }
+                                    location.reload();
+                                }, error => {
+                                    console.log('Error while trying to update approval: ', error);
+                                    alert('Please refresh the artifacts section or the browser and try again.');
+                                });
                             });
                         var rejectBtn = document.createElement("button");
                             rejectBtn.id = "reject";
@@ -154,26 +197,21 @@
                             rejectBtn.style.backgroundColor = "firebrick";
                             rejectBtn.style.color = "white";
                             rejectBtn.addEventListener("click", function() {
-                                for (let i = 0; i < approvals.length; i++) {
-                                    const approval = approvals[i];
-                                    if (approval.approver.id === user_id) {
-                                        if (approval.status === "approved") {
-                                            alert("Already approved");
-                                        } else {
-                                            approval.approvedBy = user_id;
-                                            approval.status = 'rejected';
-                                            release_mgmt_client.updateReleaseApproval(approval, project_id, approval.id)
-                                            .then(approval => {
-                                                console.log('Updated approval: ', approval);
-                                                if (approval && approval.id) {
-                                                    alert(approval_type + "-Deploy Reject Operation: Success");
-                                                } else {
-                                                    alert(approval_type + "-Deploy Reject Operation: Failure");
-                                                }
-                                            });
-                                        }
+                                approval_to_be_updated.approvedBy = user_id;
+                                approval_to_be_updated.status = 'rejected';
+                                release_mgmt_client.updateReleaseApproval(approval_to_be_updated, project_id, approval_to_be_updated.id)
+                                .then(approval => {
+                                    console.log('Updated approval: ', approval);
+                                    if (approval && approval.id) {
+                                        alert(approval_type + "-Deploy Reject Operation: Success");
+                                    } else {
+                                        alert(approval_type + "-Deploy Reject Operation: Failure");
                                     }
-                                }
+                                    location.reload();
+                                }, error => {
+                                    console.log('Error while trying to update approval: ', error);
+                                    alert('Please refresh the artifacts section or the browser and try again.');
+                                });
                             });
                         
                         // Append the buttons to the 'div' element designated to 
@@ -215,7 +253,8 @@
     </script>
 </head>
 <body style="padding: 2.5%;">
-    <div id="attachments" style="width: 100%; height: 75px; overflow: auto;">
+    <div id="menu-bar" style="margin-bottom: 1%;"></div>
+    <div id="attachments" style="width: 100%; height: 50px; overflow: auto;">
         <table border="1" cellpadding="5" style="width: 100%;">
             <tbody>
             </tbody>
