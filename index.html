@@ -9,69 +9,118 @@
         VSS.init();
 
         VSS.ready(function() {
-            VSS.require(["VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", "TFS/WorkItemTracking/RestClient"],
-                function(vss_service, release_mgmt_api, work_item_track_services, build_api, Controls, StatusIndicator, work_item_tracking_api) {
-
+            VSS.require([
+                "VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", 
+                "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", 
+                "TFS/WorkItemTracking/RestClient"
+            ], function(vss_service, release_mgmt_api, work_item_track_services, 
+                build_api, Controls, StatusIndicator, 
+                work_item_tracking_api) {
                     console.log('Web context: ', VSS.getWebContext());
-                    var artifacts_container = document.getElementById('artifacts');
-                    var wait_control = Controls.create(StatusIndicator.WaitControl, artifacts_container, {
+
+                    // retrieve the 'div' element that will display all the attachments
+                    var attachments_container = document.getElementById('attachments');
+                    var buttons_container = document.getElementById("buttons-container");
+                    
+                    // Retrieve the project id and user id (current user's) from 
+                    // the webcontext of the extension for later 
+                    // use.
+                    var project_id = VSS.getWebContext().project.id;
+                    var user_id = VSS.getWebContext().user.id;
+
+                    // VSTS' wait control (A.K.A. Loading Screen)
+                    var wait_control = Controls.create(StatusIndicator.WaitControl, attachments_container, {
+                        // Since this is just a normal loading screen that notifies 
+                        // the user that the extension is loading in the background, 
+                        // it should not be cancellable
                         cancellable: false
                     });
 
+                    // Start showing the loading screen
                     wait_control.startWait();
 
+                    // Retrieve the relevant REST API clients from the VSTS Web Extension SDK
                     var release_mgmt_client = vss_service.getCollectionClient(release_mgmt_api.ReleaseHttpClient);
                     var build_client = vss_service.getCollectionClient(build_api.BuildHttpClient2);
                     var work_item_tracking_client = vss_service.getCollectionClient(work_item_tracking_api.WorkItemTrackingHttpClient2_2);
 
+                    // Get the work item service for the current work item
                     work_item_track_services.WorkItemFormService.getService()
                     .then(function(service) {
+                        // Retrieve the "associated context" fields of the current work item
                         return Promise.all([
-                            service.getFieldValue("Associated Context"),
-                            service.getFieldValue("System.Title")
+                            service.getFieldValue("Associated Context")
                         ]);
                     }).then(function(results) {
-                        var release_info = JSON.parse(results[0]);
-                        var approvalType = results[1].split("-")[0].toLowerCase();
+                        // "Associated Context" contains the data stored by the release task 
+                        // into the current work item in the format of a JSON object 
+                        // stringified into a string value
 
+                        // Parse out the JSON data in "Associated Context"
+                        var release_info = JSON.parse(results[0]);
+
+                        // Using the release id in the JSON data, 
+                        // retrieve the release for which an approval / rejection 
+                        // is to be made
+                        //
+                        // Hence, transfer the JSON data and the release to the next 
+                        // Promise chain
                         return Promise.all([
                             release_info,
-                            approvalType,
-                            release_mgmt_client.getRelease(VSS.getWebContext().project.id, release_info.release_id)
+                            release_mgmt_client.getRelease(project_id, release_info.release_id)
                         ]);
                     }).then(function(results) {
+                        // Store the JSON data and release object 
+                        // from the previous Promise chain 
+                        // into the following variables
                         var release_info = results[0];
-                        var approvalType = results[1];
-                        var release = results[2];
-                        var user_id = VSS.getWebContext().user.id;
-                        console.log('Release info: ', release_info);
-                        console.log('User id: ', user_id);
+                        var release = results[1];
 
-                        for (var i = 0; i < release_info.attachments.length; i++) {
-                            var attachment = release_info.attachments[i];
-                            var downloadUrl = attachment.url;
+                        // Retrieve the approval type and attachments 
+                        // from the JSON data
+                        var approval_type = release_info.type;
+                        var attachments = release_info.attachments;
+
+                        console.log('Release info: ', release_info);
+
+                        // For each attachment,
+                        // 1. Create a hyperlink element (<a>)
+                        //    - This link should display the name of the attachment
+                        // 2. Create a table cell to contain this hyperlink element
+                        // 3. Create a table row to contain the table cell created in step 2.
+                        //    - When mouseover this table row, the cursor should change into a hand
+                        //    - When the table row is clicked, it should trigger the download of the attachment
+                        //
+                        // NOTE: It is deliberate that the hyperlink does not contain a link itself, 
+                        //       as doing so will cause the download action to be triggered twice.
+                        //
+                        //       Table row has been programmed to accept user clicks as this will 
+                        //       make it easier for users to click, compared to the hyperlink which 
+                        //       occupies lesser space on the screen.
+                        for (var i = 0; i < attachments.length; i++) {
+                            var current_attachment = attachments[i];
+                            var download_url = current_attachment.url;
                             var tr = document.createElement('tr');
                                 var td = document.createElement('td');
                                     var link = document.createElement('a');
-                                        link.innerHTML = downloadUrl.split("fileName=")[1];
+                                        link.innerHTML = download_url.split("fileName=")[1];
                                     td.appendChild(link);
+                                // The following is so that the cursor will change into 
+                                // a hand when the user hover their mouse over the table row
                                 tr.style.cursor = "pointer";
                                 tr.addEventListener('click', function() {
-                                    window.open(downloadUrl, "_blank");
+                                    window.open(download_url, "_blank");
                                 });
                                 tr.appendChild(td);
-                            
-                            artifacts_container.children[0].children[0].appendChild(tr);
-                            if (i !== artifacts.length - 1) {
-                                artifacts_container.appendChild(document.createElement('br'));
-                            }
+                            attachments_container.children[0].children[0].appendChild(tr);
                         }
 
-                        // Pre-Deploy or Post-Deploy Approvals
-                        var approvals = (approvalType === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
+                        // Based on the approval type, retrieve the appropriate approvals 
+                        // to be approved / rejected.
+                        var approvals = (approval_type.toLowerCase() === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
 
                         console.log(`Release: `, release);
-                        var br = document.createElement("br");
+                        // Create the "Approve" and "Reject" buttons
                         var approveBtn = document.createElement("button");
                             approveBtn.id = "approve";
                             approveBtn.innerHTML = "Approve";
@@ -82,17 +131,17 @@
                                     const approval = approvals[i];
                                     if (approval.approver.id === user_id) {
                                         if (approval.status === "approved") {
-                                            alert("Already approved");
+                                            alert(approval_type + "-Deploy Approval already approved");
                                         } else {
                                             approval.approvedBy = user_id;
                                             approval.status = 'approved';
-                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            release_mgmt_client.updateReleaseApproval(approval, project_id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
                                                 if (approval && approval.id) {
-                                                    alert("Approval Operation: Success");
+                                                    alert(approval_type + "-Deploy Approval Operation: Success");
                                                 } else {
-                                                    alert("Approval Operation: Failure");
+                                                    alert(approval_type + "-Deploy Approval Operation: Failure");
                                                 }
                                             });
                                         }
@@ -113,56 +162,33 @@
                                         } else {
                                             approval.approvedBy = user_id;
                                             approval.status = 'rejected';
-                                            release_mgmt_client.updateReleaseApproval(approval, VSS.getWebContext().project.id, approval.id)
+                                            release_mgmt_client.updateReleaseApproval(approval, project_id, approval.id)
                                             .then(approval => {
                                                 console.log('Updated approval: ', approval);
                                                 if (approval && approval.id) {
-                                                    alert("Reject Operation: Success");
+                                                    alert(approval_type + "-Deploy Reject Operation: Success");
                                                 } else {
-                                                    alert("Reject Operation: Failure");
+                                                    alert(approval_type + "-Deploy Reject Operation: Failure");
                                                 }
                                             });
                                         }
                                     }
                                 }
                             });
-                        document.getElementById("buttons-container").appendChild(rejectBtn);
-                        document.getElementById("buttons-container").appendChild(approveBtn);
-                        wait_control.endWait();
-                        return build_client.getArtifacts(release.artifacts["0"].definitionReference.version.id, VSS.getWebContext().project.id, 'Build');
-                    }).then(function(artifacts) {
-                        console.log('Artifacts: ', artifacts);
-                        // for (var i = 0; i < artifacts.length; i++) {
-                        //     var current_artefact = artifacts[i];
-                        //     var downloadUrl = current_artefact.resource.downloadUrl;
-                        //     var tr = document.createElement('tr');
-                        //         var td = document.createElement('td');
-                        //             var link = document.createElement('a');
-                        //                 // link.href = downloadUrl;
-                        //                 link.innerHTML = current_artefact.name;
-                        //             td.appendChild(link);
-                        //         tr.style.cursor = "pointer";
-                        //         tr.addEventListener('click', function() {
-                        //             window.open(downloadUrl, "_blank");
-                        //         });
-                        //         tr.appendChild(td);
-                            
-                        //     artifacts_container.children[0].children[0].appendChild(tr);
-                        //     if (i !== artifacts.length - 1) {
-                        //         artifacts_container.appendChild(document.createElement('br'));
-                        //     }
-                        // }
                         
-                        return release_mgmt_client.getApprovals(VSS.getWebContext().project.id);
-                    }).then(function(approvals) {
-                        console.log('Approvals: ', approvals);
+                        // Append the buttons to the 'div' element designated to 
+                        // hold these buttons.
+                        buttons_container.appendChild(rejectBtn);
+                        buttons_container.appendChild(approveBtn);
+
+                        // The DOM has been set up and the UI is ready to be presented 
+                        // to the user. Stop the loading screen.
+                        wait_control.endWait();
                         return work_item_track_services.WorkItemFormService.getService();
                     }).then(function (service) {
                         return Promise.all([
                             service.getFields(),
                             service.getFieldValue("Attached File Count"),
-                            service.getFieldValue("Hyperlink Count"),
-                            service.getFieldValue("Remote Link Count"),
                             service.getFieldValue("Related Links"),
                             service.getFieldValue("Attached Files"),
                             service.getFieldValue("Linked Files"),
@@ -172,10 +198,11 @@
                     }).then(function (results) {
                         var fields = results[0];
                         var attachedFileCount = results[1];
-                        var relatedLinks = results[4];
-                        var attachedFiles = results[5];
-                        var linkedFiles = results[6];
-                        var bisLinks = results[7];
+                        var relatedLinks = results[2];
+                        var attachedFiles = results[3];
+                        var linkedFiles = results[4];
+                        var bisLinks = results[5];
+                        var relatedLinksCount = results[6];
                         console.log('Fields: ', fields);
                         console.log('Attached File Count: ', attachedFileCount);
                         console.log('Related Links: ', relatedLinks);
@@ -183,26 +210,18 @@
                         console.log('Linked Files: ', linkedFiles);
                         console.log('BIS Links: ', bisLinks);
                     });
-                });
+            });
         });
     </script>
 </head>
 <body style="padding: 2.5%;">
-    <div id="artifacts" style="width: 100%; height: 75px; overflow: auto;">
+    <div id="attachments" style="width: 100%; height: 75px; overflow: auto;">
         <table border="1" cellpadding="5" style="width: 100%;">
             <tbody>
-                <!-- <tr><td>Hello</td></tr>
-                <tr><td>World</td></tr>
-                <tr><td>Hello</td></tr>
-                <tr><td>World</td></tr>
-                <tr><td>Hello</td></tr>
-                <tr><td>World</td></tr> -->
             </tbody>
         </table>
     </div>
     <br/>
     <div id="buttons-container"></div>
-    <!-- <button id="reject" style="background-color: firebrick; color: white">Reject</button>
-    <button id="approve" style="background-color: yellowgreen; color: black">Approve</button> -->
 </body>
 </html>

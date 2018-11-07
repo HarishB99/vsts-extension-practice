@@ -6,14 +6,15 @@ try {
     console.log();
     console.log('[i] Executing task: Started');
     console.log();
-    console.log('[i] Storing input variables: Started');
+    console.log('[i] Initialising task: Started');
+        // Retrieve relevant environment variables using the VSTS task library
+        const team_foundation_server_uri = task.getVariable('system.teamfoundationserveruri');
+        const team_project_name = task.getVariable('system.teamproject');
+        const build_id = task.getVariable('build.buildid');
+        const release_id = task.getVariable('release.releaseid');
+        const release_environment_name = task.getVariable('release.environmentname');
 
-    const team_foundation_server_uri = task.getVariable('system.teamfoundationserveruri');
-    const team_project_name = task.getVariable('system.teamproject');
-    const build_id = task.getVariable('build.buildid');
-    const release_id = task.getVariable('release.releaseid');
-    const release_environment_name = task.getVariable('release.environmentname');
-
+        // Retrieve user inputs
         let pre_primary_approvers = null;
         let pre_secondary_approvers = null;
         let pre_approval_timeout = null;
@@ -21,60 +22,100 @@ try {
         let post_primary_approvers = null;
         let post_secondary_approvers = null;
         let post_approval_timeout = null;
+
+        let smtp_host = null;
+        let smtp_port = null;
+        let smtp_username = null;
+        let smtp_password = null;
+        let smtp_verbose = null;
         
         const pre_enabled = task.getBoolInput('pre_enabled', true);
         const post_enabled = task.getBoolInput('post_enabled', true);
+        const smtp_enabled = task.getBoolInput('smtp_enabled', true);
 
+        // If pre-deployment approval is enabled, 
+        // retrieve all user inputs related for this operation.
         if (pre_enabled) {
             pre_primary_approvers = JSON.parse(task.getInput('pre_primary_approvers', true));
             pre_secondary_approvers = JSON.parse(task.getInput('pre_secondary_approvers', true));
             pre_approval_timeout = parseInt(task.getInput('pre_approval_timeout', true));
         }
         
+        // If post-deployment approval is enabled, 
+        // retrieve all user inputs related for this operation.
         if (post_enabled) {
             post_primary_approvers = JSON.parse(task.getInput('post_primary_approvers', true));
             post_secondary_approvers = JSON.parse(task.getInput('post_secondary_approvers', true));
             post_approval_timeout = parseInt(task.getInput('post_approval_timeout', true));
         }
+        
+        // If SMTP option is enabled, 
+        // retrieve all user inputs related for this operation.
+        if (smtp_enabled) {
+            smtp_host = task.getInput('smtp_host', true);
+            smtp_port = parseInt(task.getInput('smtp_port', true));
+            smtp_username = task.getInput('smtp_username', true);
+            smtp_password = task.getInput('smtp_password', true);
+            smtp_verbose = task.getBoolInput('smtp_verbose', true);
+        }
 
-        const smtp_host = task.getInput('smtp_host', true);
-        const smtp_port = parseInt(task.getInput('smtp_port', true));
-        const smtp_username = task.getInput('smtp_username', true);
-        const smtp_password = task.getInput('smtp_password', true);
-        const smtp_verbose = task.getBoolInput('smtp_verbose', true);
+        // Retrieve the work item "stakeholder"
+        // i.e. the user to whom the work items created 
+        //      will be assigned to 
+        const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true))[0];
+        // Retrieve tool name and version, as configured by user
         const tool_name = task.getInput('tool_name', true);
         const tool_version = task.getInput('tool_version', true);
-        const smtp_enabled = task.getBoolInput('smtp_enabled', true);
-
-        const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true));
-    console.log('[+] Storing input variables: Complete');
+    console.log('[+] Initialising task: Complete');
     console.log();
+
+
+
+    // With the help of Azure DevOps node api, get the 
+    // authentication handler that will be used for the connection
+    // between this node js client and the Azure DevOps REST endpoints.
+    //
+    // This is necessary for this node js release task to communicate 
+    // with the relevant REST APIs later.
     const authHandler = azure_devops_api.getBearerHandler(
         task.getEndpointAuthorizationParameter('SystemVssConnection', 'AccessToken', false));
     const connection = new azure_devops_api.WebApi(team_foundation_server_uri, authHandler);
-    connection.getReleaseApi().then(api => {
-        console.log(`[i] Retrieve release info: Started`);
+
+    // With the connection created, we are ready to 
+    // start the task and communicate with the REST APIs.
+    connection.getReleaseApi().then(release_api => {
+        console.log(`[i] Retrieve release info to be updated: Started`);
         return Promise.all([
-            api.getRelease(team_project_name, parseInt(release_id)),
+            release_api.getRelease(team_project_name, parseInt(release_id)),
             connection.getReleaseApi()
         ]);
     }).then(results => {
-        console.log(`[+] Retrieve release info: Complete`);
+        console.log(`[+] Retrieve release info to be updated: Complete`);
         console.log();
 
-        const [ release, secondApi ] = results;
+        const [ release, release_api ] = results;
         
-        let indexOfInterest = 0;
+        // index_of_interest keeps track of the 
+        // release stage for which the release task 
+        // will be configure the approvals
+        //
+        // i.e. The next Stage
+        // e.g. If you are running this task in Stage 1,
+        //      the task itself will configure approvals 
+        //      for Stage 2.
+        let index_of_interest = 0;
         for (let i = 0; i < release.environments.length; i++) {
             const environment = release.environments[i];
             if (environment.name === release_environment_name) {
-                indexOfInterest = ++i;
+                index_of_interest = ++i;
                 break;
             }
         }
-
+        
+        // If pre-deployment approval is enabled, 
+        // configure pre-deployment approvals.
         if (pre_enabled) {
-            release.environments[indexOfInterest].preApprovalsSnapshot.approvalOptions = {
+            release.environments[index_of_interest].preApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: pre_approval_timeout,
                 releaseCreatorCanBeApprover: true,
                 requiredApproverCount: 1
@@ -104,11 +145,13 @@ try {
                     rank: 1
                 });
             }
-            release.environments[indexOfInterest].preApprovalsSnapshot.approvals = preApprovalsArray;
+            release.environments[index_of_interest].preApprovalsSnapshot.approvals = preApprovalsArray;
         }
         
+        // If post-deployment approval is enabled, 
+        // configure post-deployment approvals.
         if (post_enabled) {
-            release.environments[indexOfInterest].postApprovalsSnapshot.approvalOptions = {
+            release.environments[index_of_interest].postApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: post_approval_timeout,
                 releaseCreatorCanBeApprover: true,
                 requiredApproverCount: 1
@@ -138,48 +181,61 @@ try {
                     rank: 1
                 });
             }
-            release.environments[indexOfInterest].postApprovalsSnapshot.approvals = postApprovalsArray;
+            release.environments[index_of_interest].postApprovalsSnapshot.approvals = postApprovalsArray;
         }
-        // console.log(`[i] Information to be updated: ${JSON.stringify(release)}`);
+
+        // The release object has been configured.
+        // Now it is time to send this configured object to the api 
+        // to publish the changes.
         console.log('[i] Update approvals using release info retrieved: Started');
-        // return secondApi.updateRelease(release, team_project_name, release.id)
         return Promise.all([
-            secondApi.updateRelease(release, team_project_name, release.id),
+            release_api.updateRelease(release, team_project_name, release.id),
             connection.getBuildApi()
         ]);
     }).then(results => {
-        const [ release, api ] = results;
-        
-        // console.log(`[i] Updated release: ${JSON.stringify(release)}`);
+        const [ updated_release, build_api ] = results;
         console.log(`[+] Update approvals using release info retrieved: Complete`);
         console.log();
-        console.log(`[i] Create work item: Started`);
 
-        let indexOfInterest = 0;
-        for (let i = 0; i < release.environments.length; i++) {
-            const environment = release.environments[i];
+        // Once again, index_of_interest keeps track of the 
+        // release stage for which the release task 
+        // will be configure the approvals
+        //
+        // i.e. The next Stage
+        // e.g. If you are running this task in Stage 1,
+        //      the task itself will configure approvals 
+        //      for Stage 2.
+        let index_of_interest = 0;
+        for (let i = 0; i < updated_release.environments.length; i++) {
+            const environment = updated_release.environments[i];
             if (environment.name === release_environment_name) {
-                indexOfInterest = ++i;
+                index_of_interest = ++i;
                 break;
             }
         }
 
+        // This array will hold the information 
+        // of each approvers necessary to send 
+        // out the emails later, if SMTP (email)
+        // option has been enabled.
         const approvers = [];
 
-        release.environments[indexOfInterest].preApprovalsSnapshot.approvals.forEach(approval => {
+        updated_release.environments[index_of_interest].preApprovalsSnapshot.approvals.forEach(approval => {
             approvers.push({
                 info: approval.approver,
                 type: 'Pre'
             });
         });
 
-        release.environments[indexOfInterest].postApprovalsSnapshot.approvals.forEach(approval => {
+        updated_release.environments[index_of_interest].postApprovalsSnapshot.approvals.forEach(approval => {
             approvers.push({
                 info: approval.approver,
                 type: 'Post'
             });
         });
 
+        // Information needed to store in and create 
+        // the work items later.
         const work_item_info = {
             owner_info: {
                 displayName: '',
@@ -192,24 +248,26 @@ try {
             }
         };
 
+        // Store the information of the 
+        // work item "stakeholder"
         approvers.forEach(approver => {
-            if (approver.info.id === work_item_stakeholder[0]) {
+            if (approver.info.id === work_item_stakeholder) {
                 work_item_info.owner_info.displayName = approver.info.displayName;
                 work_item_info.owner_info.uniqueName = approver.info.uniqueName;
             }
         });
 
-        work_item_info.associated_context.release_id = release.id;
-        work_item_info.associated_context.indexOfInterest = indexOfInterest;
+        work_item_info.associated_context.release_id = updated_release.id;
+        work_item_info.associated_context.indexOfInterest = index_of_interest;
 
         return Promise.all([
             work_item_info,
             approvers,
-            api.getArtifacts(build_id, team_project_name),
+            build_api.getArtifacts(build_id, team_project_name),
             connection.getBuildApi()
         ]);
     }).then(results => {
-        const [ work_item_info, approvers, artifacts, api ] = results;
+        const [ work_item_info, approvers, artifacts, build_api ] = results;
 
         const promise_values = [
             work_item_info,
@@ -219,20 +277,12 @@ try {
         ];
 
         artifacts.forEach(artifact => {
-            promise_values.push(api.getArtifactContentZip(build_id, artifact.name, team_project_name));
+            promise_values.push(build_api.getArtifactContentZip(build_id, artifact.name, team_project_name));
         });
         
         return Promise.all(promise_values);
     }).then(results => {
-        const work_item_info = results[0];
-        const approvers = results[1];
-        const artifacts = results[2];
-        const work_item_tracking_api = results[3];
-        const artifact_zips = [];
-        
-        for (let i = 4; i < results.length; i++) {
-            artifact_zips.push(results[i]);
-        }
+        const [ work_item_info, approvers, artifacts, work_item_tracking_api, ...artifact_zips ] = results;
 
         const promise_values = [
             work_item_info,
@@ -246,21 +296,13 @@ try {
         
         return Promise.all(promise_values);
     }).then(results => {
-        const work_item_info = results[0];
-        const approvers = results[1];
-        const api = results[2];
+        const [ work_item_info, approvers, work_item_tracking_api, ...attachments ] = results;
 
-        const attachments = [];
-        
-        for (let i = 3; i < results.length; i++) {
-            attachments.push(results[i]);
-            work_item_info.associated_context.attachments.push(results[i]);
-        }
+        attachments.forEach(attachment => {
+            work_item_info.associated_context.attachments.push(attachment);
+        });
 
-        // console.log(`work_item_info: ${JSON.stringify(work_item_info)}`);
-        const associated_context = JSON.stringify(work_item_info.associated_context);
         const work_item_stakeholder_info = work_item_info.owner_info;
-        // console.log(`associated_context: ${associated_context}`);
 
         const pre_work_item_ops = [
             {
@@ -270,7 +312,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": associated_context
+                "value": JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -285,7 +327,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": associated_context
+                "value": JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -309,21 +351,20 @@ try {
             post_work_item_ops.push(op);
         });
 
+        console.log(`[i] Create work items: Started`);
         return Promise.all([
-            api.createWorkItem(
+            work_item_tracking_api.createWorkItem(
                 null, pre_work_item_ops, team_project_name, 'Feature', false, false, false),
-            api.createWorkItem(
+            work_item_tracking_api.createWorkItem(
                 null, post_work_item_ops, team_project_name, 'Feature', false, false, false),
             approvers
         ]); 
     }).then(results => {
         const [ preWorkItem, postWorkItem, approvers ] = results;
 
-        // console.log(`[i] Pre Work Item created: ${JSON.stringify(preWorkItem)}`);
-        // console.log(`[i] Post Work Item created: ${JSON.stringify(postWorkItem)}`);
-        console.log(`[+] Create work item: Complete`);
+        console.log(`[+] Create work items: Complete`);
         console.log();
-        console.log(`[i] Send email: Started`);
+        console.log(`[i] Send emails: Started`);
         if (smtp_enabled) {
             const transportOptions = {
                 host: smtp_host,
@@ -369,7 +410,7 @@ try {
             return console.log('[i] Skipping this feature...');
         }
     }).then(() => {
-        console.log(`[+] Send email: Complete`);
+        console.log(`[+] Send emails: Complete`);
         console.log();
     }).then(() => {
         console.log(`[+] Executing task: Complete`);

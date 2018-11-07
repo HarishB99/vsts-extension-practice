@@ -12,7 +12,7 @@
     "version": {
         "Major": 2,
         "Minor": 7,
-        "Patch": 0
+        "Patch": 3
     },
     "runsOn": [
         "Agent"
@@ -32,6 +32,11 @@
         {
             "name": "workitem",
             "displayName": "Work Item Options",
+            "isExpanded": true
+        },
+        {
+            "name": "artifactinfo",
+            "displayName": "Artifact Information",
             "isExpanded": true
         },
         {
@@ -59,6 +64,24 @@
             "required": true,
             "groupName": "workitem",
             "helpMarkDown": "A user (NOT GROUP) who is also one of the approvers."
+        },
+        {
+            "name": "tool_name",
+            "type": "string",
+            "label": "Tool Name",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "artifactinfo",
+            "helpMarkDown": "The name of the tool / code you are uploading."
+        },
+        {
+            "name": "tool_version",
+            "type": "string",
+            "label": "Tool Version",
+            "defaultValue": "",
+            "required": true,
+            "groupName": "artifactinfo",
+            "helpMarkDown": "The version of the tool / code you are uploading."
         },
         {
             "name": "pre_primary_approvers",
@@ -146,32 +169,15 @@
             "label": "Enabled",
             "defaultValue": "false",
             "groupName": "email",
+            "required": true,
             "helpMarkDown": "If this is true, emails containing link to the work items created will be sent to all approvers."
-        },
-        {
-            "name": "tool_name",
-            "type": "string",
-            "label": "Tool Name",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "The name of the tool / code you are uploading."
-        },
-        {
-            "name": "tool_version",
-            "type": "string",
-            "label": "Tool Version",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "email",
-            "helpMarkDown": "The version of the tool / code you are uploading."
         },
         {
             "name": "smtp_host",
             "type": "string",
             "label": "SMTP Server URL",
             "defaultValue": "",
-            "required": true,
+            "required": false,
             "groupName": "email",
             "helpMarkDown": "The URL of the SMTP server to use."
         },
@@ -180,7 +186,7 @@
             "type": "number",
             "label": "SMTP Port Number",
             "defaultValue": "",
-            "required": true,
+            "required": false,
             "groupName": "email",
             "validation": {
                 "expression": "isInRange(value, 0, 65535)",
@@ -198,7 +204,7 @@
                 "expression": "isEmail(value)",
                 "message": "Please enter a valid email address."
             },
-            "required": true,
+            "required": false,
             "helpMarkDown": "The Username to use."
         },
         {
@@ -207,7 +213,7 @@
             "label": "Password",
             "defaultValue": "$(password)",
             "groupName": "email",
-            "required": true,
+            "required": false,
             "helpMarkDown": "The Password to use."
         },
         {
@@ -215,7 +221,7 @@
             "type": "boolean",
             "label": "SMTP Verbose Mode Enabled",
             "defaultValue": "false",
-            "required": true,
+            "required": false,
             "groupName": "email",
             "helpMarkDown": "If this is true, the email handler will log more verbose output"
         }
