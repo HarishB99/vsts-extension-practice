@@ -1,7 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "harish-release-task",
-    "version": "0.0.0.289",
+    "version": "0.0.0.324",
     "name": "Harish Release Tools",
     "description": "A Visual Studio Services release task to set primary and secondary approvers, so that secondary approvers can approve a release when primary approvers aren't able to do so.",
     "publisher": "HarishB",
@@ -17,7 +17,7 @@
         "vso.release_manage",
         "vso.build",
         "vso.identity",
-        "vso.work"
+        "vso.work_full"
     ],
     "contributions": [
         {
@@ -40,8 +40,8 @@
             "includes": [ "ms.vss-releaseManagement-web.release-service-data-external" ],
             "properties": {
                 "name": "Artifacts",
-                "order": 0,
-                "uri": "index.html"
+                "uri": "index.html",
+                "height": 275
             }
         }
     ],
@@ -55,10 +55,6 @@
         },
         {
             "path": "node_modules/vss-web-extension-sdk/lib",
-            "addressable": true
-        },
-        {
-            "path": "contents",
             "addressable": true
         }
     ]

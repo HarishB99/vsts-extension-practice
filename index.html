@@ -12,12 +12,12 @@
             VSS.require([
                 "VSS/Service", "ReleaseManagement/Core/RestClient", "TFS/WorkItemTracking/Services", 
                 "TFS/Build/RestClient", "VSS/Controls", "VSS/Controls/StatusIndicator", 
-                "TFS/WorkItemTracking/RestClient", "VSS/Controls/Menus"
+                "TFS/WorkItemTracking/RestClient", "VSS/Controls/Menus", "VSS/Controls/Dialogs"
             ], function(vss_service, release_mgmt_api, work_item_track_services, 
                 build_api, Controls, StatusIndicator, 
-                work_item_tracking_api, Menus) {
+                work_item_tracking_api, Menus, Dialogs) {
                     console.log('Web context: ', VSS.getWebContext());
-
+                    
                     // retrieve the 'div' element that will display all the attachments
                     var attachments_container = document.getElementById('attachments');
                     var buttons_container = document.getElementById("buttons-container");
@@ -37,6 +37,93 @@
                                 case "refresh":
                                     location.reload();
                                     break;
+                                case "new-file":
+                                    var input_container = document.createElement("div");
+                                    var input = document.createElement("input");
+                                    input.type = "file";
+                                    input.id = "file";
+                                    input_container.appendChild(input);
+                                    var dialog = Dialogs.show(Dialogs.ModalDialog, {
+                                        title: "Upload Attachment",
+                                        content: input_container.outerHTML,
+                                        buttons: {
+                                            "Upload": function() {
+                                                var file = document.getElementById("file").files[0];
+                                                if (file) {
+                                                    var reader = new FileReader();
+                                                    reader.readAsBinaryString(file, "UTF-8");
+                                                    reader.onload = function(e) {
+                                                        work_item_tracking_client.createAttachment(e.target.result, file.name, ((file.name.endsWith(".txt") || file.name.endsWith(".md")) ? 'Simple' : 'Chunked'))
+                                                        .then(function(attachment) {
+                                                            console.log('Attachment: ', attachment);
+                                                            return Promise.all([
+                                                                attachment,
+                                                                work_item_track_services.WorkItemFormService.getService()
+                                                            ]);
+                                                        }).then(function(results) {
+                                                            var attachment = results[0];
+                                                            var service = results[1];
+                                                            return Promise.all([
+                                                                attachment,
+                                                                service.getId(),
+                                                                service.getFieldValue("Associated Context")
+                                                            ]);
+                                                        }).then(function(results) {
+                                                            var attachment = results[0];
+                                                            var work_item_id = results[1];
+                                                            var associated_context = results[2];
+                                                            return Promise.all([
+                                                                work_item_tracking_client.updateWorkItem([{
+                                                                    "op": "add",
+                                                                    "path": `/relations/-`,
+                                                                    "value": {
+                                                                        "rel": "AttachedFile",
+                                                                        "url": attachment.url,
+                                                                        "attributes": {
+                                                                            "comment": `Attachment Id: ${attachment.id}`
+                                                                        }
+                                                                    }
+                                                                }], work_item_id, false, false, false),
+                                                                attachment,
+                                                                associated_context
+                                                            ]);
+                                                        }).then(function(results) {
+                                                            var work_item = results[0];
+                                                            var attachment = results[1];
+                                                            var associated_context = results[2];
+
+                                                            var release_info = JSON.parse(associated_context);
+                                                            release_info.attachments.push(attachment);
+                                                            console.log("Updated work_item: ", work_item);
+                                                            return Promise.all([
+                                                                work_item_track_services.WorkItemFormService.getService(),
+                                                                release_info
+                                                            ]);
+                                                            // dialog.close();
+                                                        }).then(function(results) {
+                                                            var service = results[0];
+                                                            var release_info = results[1];
+
+                                                            return service.setFieldValue("Associated Context", JSON.stringify(release_info));
+                                                        }).then(() => {
+                                                            console.log(e.target.result);
+                                                            dialog.close();
+                                                            location.reload();
+                                                        });
+                                                    };
+                                                    reader.onerror = function() {
+                                                        console.log("Unable to read file");
+                                                        alert("Unable to read file.");
+                                                    };
+                                                }
+                                                
+                                            },
+                                            "Cancel": function() {
+                                                dialog.close()
+                                            }
+                                        }
+                                    });
+                                    break;
                                 default:
                                     alert("Unhandled action: " + command);
                                     break;
@@ -45,7 +132,7 @@
                     };
 
                     var menu_bar = Controls.create(Menus.MenuBar, menu_bar_container, menu_options);
-                    
+
                     // Retrieve the project id and user id (current user's) from 
                     // the webcontext of the extension for later 
                     // use.
@@ -81,8 +168,9 @@
                         // stringified into a string value
 
                         // Parse out the JSON data in "Associated Context"
+                        console.log('Associated Context: ', results[0]);
                         var release_info = JSON.parse(results[0]);
-                        var type = (release_info.type.toLowerCase() === 'pre') ? 'preDeploy' : 'postDeploy';
+                        var type = release_info.type.toLowerCase() + 'Deploy';
 
                         // Using the release id in the JSON data, 
                         // retrieve the release for which an approval / rejection 
