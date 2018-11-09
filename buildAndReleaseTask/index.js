@@ -312,7 +312,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": `${JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))}${JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))}`
+                "value": JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -327,7 +327,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": `${JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))}${JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))}`
+                "value": JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -354,9 +354,9 @@ try {
         console.log(`[i] Create work items: Started`);
         return Promise.all([
             work_item_tracking_api.createWorkItem(
-                null, pre_work_item_ops, team_project_name, 'Feature', false, false, false),
+                null, pre_work_item_ops, team_project_name, 'Feature', false, true, false),
             work_item_tracking_api.createWorkItem(
-                null, post_work_item_ops, team_project_name, 'Feature', false, false, false),
+                null, post_work_item_ops, team_project_name, 'Feature', false, true, false),
             approvers
         ]); 
     }).then(results => {

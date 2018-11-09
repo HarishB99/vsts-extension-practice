@@ -50,10 +50,11 @@
                                             "Upload": function() {
                                                 var file = document.getElementById("file").files[0];
                                                 if (file) {
+                                                    // console.log(file);
                                                     var reader = new FileReader();
-                                                    reader.readAsBinaryString(file, "UTF-8");
+                                                    reader.readAsArrayBuffer(file);
                                                     reader.onload = function(e) {
-                                                        work_item_tracking_client.createAttachment(e.target.result, file.name, ((file.name.endsWith(".txt") || file.name.endsWith(".md")) ? 'Simple' : 'Chunked'))
+                                                        work_item_tracking_client.createAttachment(e.target.result, file.name)
                                                         .then(function(attachment) {
                                                             console.log('Attachment: ', attachment);
                                                             return Promise.all([
@@ -83,7 +84,7 @@
                                                                             "comment": `Attachment Id: ${attachment.id}`
                                                                         }
                                                                     }
-                                                                }], work_item_id, false, false, false),
+                                                                }], work_item_id, false, true, false),
                                                                 attachment,
                                                                 associated_context
                                                             ]);
@@ -341,8 +342,8 @@
     </script>
 </head>
 <body style="padding: 2.5%;">
-    <div id="menu-bar" style="margin-bottom: 1%;"></div>
-    <div id="attachments" style="width: 100%; height: 50px; overflow: auto;">
+    <div id="menu-bar" style="margin-bottom: 2.5%;"></div>
+    <div id="attachments" style="width: 100%; height: 150px; overflow: auto;">
         <table border="1" cellpadding="5" style="width: 100%;">
             <tbody>
             </tbody>
