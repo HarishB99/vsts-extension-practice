@@ -312,7 +312,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))
+                "value": `${JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))}${JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))}`
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -327,7 +327,7 @@ try {
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))
+                "value": `${JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))}${JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))}`
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
