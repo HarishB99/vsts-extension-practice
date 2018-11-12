@@ -1,4 +1,4 @@
-const task = require('vsts-task-lib/task');
+const task = require('azure-pipelines-task-lib/task');
 const azure_devops_api = require('azure-devops-node-api');
 const mailer = require('nodemailer');
 
