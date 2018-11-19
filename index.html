@@ -16,6 +16,7 @@
             ], function(vss_service, release_mgmt_api, work_item_track_services, 
                 build_api, Controls, StatusIndicator, 
                 work_item_tracking_api, Menus, Dialogs) {
+                    var SIXTY_MB = 60 * 1024 * 1024;
                     console.log('Web context: ', VSS.getWebContext());
                     
                     // retrieve the 'div' element that will display all the attachments
@@ -54,6 +55,13 @@
                                                     var reader = new FileReader();
                                                     reader.readAsArrayBuffer(file);
                                                     reader.onload = function(e) {
+                                                        if (file.size > SIXTY_MB) {
+                                                            console.log(e.target.result);
+                                                            alert("Upload not allowed.\n\n" + "File size is " + (file.size / (1024 * 1024)) + "MB.\n\nPlease upload a file of size less than 60 MB. If you have a group of files compressed together in a zip file, uploading these files separately instead.");
+                                                            dialog.close();
+                                                            // location.reload();
+                                                            return;
+                                                        }
                                                         work_item_tracking_client.createAttachment(e.target.result, file.name)
                                                         .then(function(attachment) {
                                                             console.log('Attachment: ', attachment);
