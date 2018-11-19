@@ -96,25 +96,27 @@
                                                                 attachment,
                                                                 associated_context
                                                             ]);
-                                                        }).then(function(results) {
-                                                            var work_item = results[0];
-                                                            var attachment = results[1];
-                                                            var associated_context = results[2];
+                                                        })
+                                                        // .then(function(results) {
+                                                        //     var work_item = results[0];
+                                                        //     var attachment = results[1];
+                                                        //     var associated_context = results[2];
 
-                                                            var release_info = JSON.parse(associated_context);
-                                                            release_info.attachments.push(attachment);
-                                                            console.log("Updated work_item: ", work_item);
-                                                            return Promise.all([
-                                                                work_item_track_services.WorkItemFormService.getService(),
-                                                                release_info
-                                                            ]);
-                                                            // dialog.close();
-                                                        }).then(function(results) {
-                                                            var service = results[0];
-                                                            var release_info = results[1];
+                                                        //     var release_info = JSON.parse(associated_context);
+                                                        //     release_info.attachments.push(attachment);
+                                                        //     console.log("Updated work_item: ", work_item);
+                                                        //     return Promise.all([
+                                                        //         work_item_track_services.WorkItemFormService.getService(),
+                                                        //         release_info
+                                                        //     ]);
+                                                        //     // dialog.close();
+                                                        // }).then(function(results) {
+                                                        //     var service = results[0];
+                                                        //     var release_info = results[1];
 
-                                                            return service.setFieldValue("Associated Context", JSON.stringify(release_info));
-                                                        }).then(() => {
+                                                        //     return service.setFieldValue("Associated Context", JSON.stringify(release_info));
+                                                        // })
+                                                        .then(() => {
                                                             console.log(e.target.result);
                                                             dialog.close();
                                                             location.reload();
@@ -169,7 +171,8 @@
                     .then(function(service) {
                         // Retrieve the "associated context" fields of the current work item
                         return Promise.all([
-                            service.getFieldValue("Associated Context")
+                            service.getFieldValue("Associated Context"),
+                            service.getId()
                         ]);
                     }).then(function(results) {
                         // "Associated Context" contains the data stored by the release task 
@@ -179,6 +182,7 @@
                         // Parse out the JSON data in "Associated Context"
                         console.log('Associated Context: ', results[0]);
                         var release_info = JSON.parse(results[0]);
+                        var work_item_id = results[1];
                         var type = release_info.type.toLowerCase() + 'Deploy';
 
                         // Using the release id in the JSON data, 
@@ -190,7 +194,8 @@
                         return Promise.all([
                             release_info,
                             release_mgmt_client.getRelease(project_id, release_info.release_id),
-                            release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], type)
+                            release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], type),
+                            work_item_tracking_client.getWorkItem(work_item_id, null, null, 'relations')
                         ]);
                     }).then(function(results) {
                         // Store the JSON data and release object 
@@ -199,13 +204,15 @@
                         var release_info = results[0];
                         var release = results[1];
                         var approvals = results[2];
+                        var relations = results[3].relations;
 
                         console.log('Approvals: ', approvals);
+                        console.log('ATTACHMENTS: ', relations);
 
                         // Retrieve the approval type and attachments 
                         // from the JSON data
                         var approval_type = release_info.type;
-                        var attachments = release_info.attachments;
+                        // var attachments = release_info.attachments;
 
                         console.log('Release info: ', release_info);
 
@@ -223,23 +230,42 @@
                         //       Table row has been programmed to accept user clicks as this will 
                         //       make it easier for users to click, compared to the hyperlink which 
                         //       occupies lesser space on the screen.
-                        for (var i = 0; i < attachments.length; i++) {
-                            var current_attachment = attachments[i];
-                            var download_url = current_attachment.url;
+                        relations.forEach(function(relation) {
+                            var url = relation.url;
+                            var attachment_name = relation.attributes.name;
                             var tr = document.createElement('tr');
                                 var td = document.createElement('td');
                                     var link = document.createElement('a');
-                                        link.innerHTML = download_url.split("fileName=")[1];
+                                        link.innerHTML = attachment_name;
+
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('GET', url, true);
+                            xhr.responseType = 'blob';
+                            xhr.onload = function() {
+                                if (this.status === 200 || this.status === 203) {
+                                    var blob = new Blob([this.response]);
+                                    var download_url = window.URL.createObjectURL(blob);
+                                    link.href = download_url;
+                                    link.download = attachment_name;
                                     td.appendChild(link);
-                                // The following is so that the cursor will change into 
-                                // a hand when the user hover their mouse over the table row
-                                tr.style.cursor = "pointer";
-                                tr.addEventListener('click', function() {
-                                    window.open(download_url, "_blank");
-                                });
-                                tr.appendChild(td);
-                            attachments_container.children[0].children[0].appendChild(tr);
-                        }
+                                    // The following is so that the cursor will change into 
+                                    // a hand when the user hover their mouse over the table cell
+                                    tr.style.cursor = "pointer";
+                                    tr.addEventListener('click', function() {
+                                        link.click();
+                                    });
+                                    tr.appendChild(td);
+                                    attachments_container.children[0].children[0].appendChild(tr);
+                                } else {
+                                    console.log('Error: ', this.statusText);
+                                }
+                            };
+                            xhr.onerror = function() {
+                                console.log('Error: Network error');
+                            };
+
+                            xhr.send();
+                        });
                         
                         if (approvals.length < 1) {
                             buttons_container.innerHTML = "There are no pending " + approval_type.toLowerCase() + "-deployment approvals for now.";
