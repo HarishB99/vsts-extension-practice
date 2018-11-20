@@ -68,7 +68,11 @@
                                                 reader.onload = function(e) {
                                                     if (file.size > SIXTY_MB) {
                                                         console.log(e.target.result);
-                                                        alert("Upload not allowed.\n\n" + "File size is " + (file.size / (1024 * 1024)) + "MB.\n\nPlease upload a file of size less than 60 MB. If you have a group of files compressed together in a zip file, uploading these files separately instead.");
+                                                        alert("Upload not allowed.\n\n" + 
+                                                            "File size is " + (file.size / (1024 * 1024)) + "MB.\n\n" + 
+                                                            "Please upload a file of size less than 60 MB. " + 
+                                                            "If you have a group of files compressed together in a zip file, " + 
+                                                            "consider uploading these files separately instead.");
                                                         dialog.close();
                                                         return;
                                                     }
