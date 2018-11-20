@@ -243,8 +243,7 @@ try {
             },
             associated_context: {
                 release_id: '',
-                indexOfInterest: 0,
-                attachments: []
+                indexOfInterest: 0
             }
         };
 
@@ -297,10 +296,6 @@ try {
         return Promise.all(promise_values);
     }).then(results => {
         const [ work_item_info, approvers, work_item_tracking_api, ...attachments ] = results;
-
-        attachments.forEach(attachment => {
-            work_item_info.associated_context.attachments.push(attachment);
-        });
 
         const work_item_stakeholder_info = work_item_info.owner_info;
 
