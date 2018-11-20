@@ -17,7 +17,7 @@
             function(vss_service, release_mgmt_api, work_item_track_services, 
                 build_api, Controls, StatusIndicator, 
                 work_item_tracking_api, Menus, Dialogs) {
-                    
+
                 const SIXTY_MB = 60 * 1024 * 1024;
                 console.log('Web context: ', VSS.getWebContext());
                 
@@ -160,7 +160,6 @@
                     // Parse out the JSON data in "Associated Context"
                     var release_info = JSON.parse(results[0]);
                     var work_item_id = results[1];
-                    var type = release_info.type.toLowerCase() + 'Deploy';
 
                     // Using the release id in the JSON data, 
                     // retrieve the release for which an approval / rejection 
@@ -170,8 +169,8 @@
                     // Promise chain
                     return Promise.all([
                         release_info,
-                        release_mgmt_client.getRelease(project_id, release_info.release_id),
-                        release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], type),
+                        release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], 'preDeploy'),
+                        release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], 'postDeploy'),
                         work_item_tracking_client.getWorkItem(work_item_id, null, null, 'relations')
                     ]);
                 })
@@ -180,82 +179,78 @@
                     // from the previous Promise chain 
                     // into the following variables
                     var release_info = results[0];
-                    var release = results[1];
-                    var approvals = results[2];
+                    var preDeployApprovals = results[1];
+                    var postDeployApprovals = results[2];
                     var relations = results[3].relations;
 
                     // Retrieve the approval type and attachments 
                     // from the JSON data
-                    var approval_type = release_info.type;
+                    // var approval_type = release_info.type;
 
-                    console.log('Relation: ', relations);
+                    console.log('Pre-Deploy Approvals: ', preDeployApprovals);
+                    console.log('Post-Deploy Approvals: ', postDeployApprovals);
 
-                    // For each attachment,
+                    // For each relation,
+                    //      Check whether it is an attached file
+                    //
+                    // For each file attachment,
                     // 1. Create a hyperlink element (<a>)
                     //    - This link should display the name of the attachment
                     // 2. Create a table cell to contain this hyperlink element
-                    // 3. Create a table row to contain the table cell created in step 2.
-                    //    - When mouseover this table row, the cursor should change into a hand
-                    //    - When the table row is clicked, it should trigger the download of the attachment
-                    //
-                    // NOTE: It is deliberate that the hyperlink does not contain a link itself, 
-                    //       as doing so will cause the download action to be triggered twice.
-                    //
-                    //       Table row has been programmed to accept user clicks as this will 
-                    //       make it easier for users to click, compared to the hyperlink which 
-                    //       occupies lesser space on the screen.
                     relations.forEach(function(relation) {
-                        var url = relation.url;
-                        var attachment_name = relation.attributes.name;
-                        var tr = document.createElement('tr');
-                            var td = document.createElement('td');
-                                var link = document.createElement('a');
-                                    link.innerHTML = attachment_name;
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('GET', url, true);
-                        xhr.responseType = 'blob';
-                        xhr.onload = function() {
-                            if (this.status === 200 || this.status === 203) {
-                                var blob = new Blob([this.response]);
-                                var download_url = window.URL.createObjectURL(blob);
-                                link.href = download_url;
-                                link.download = attachment_name;
-                                td.appendChild(link);
-                                tr.appendChild(td);
-                                attachments_container.children[0].children[0].appendChild(tr);
-                            } else {
-                                console.log('Error: Error while retrieving file: ', this.statusText);
-                            }
-                        };
-                        xhr.onerror = function() {
-                            console.log('Error: Network error. Please check your network connection and try again.');
-                        };
-                        xhr.send();
+                        if (relation.rel === "AttachedFile") {
+                            var url = relation.url;
+                            var attachment_name = relation.attributes.name;
+                            var tr = document.createElement('tr');
+                                var td = document.createElement('td');
+                                    var link = document.createElement('a');
+                                        link.innerHTML = attachment_name;
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('GET', url, true);
+                            xhr.responseType = 'blob';
+                            xhr.onload = function() {
+                                if (this.status === 200 || this.status === 203) {
+                                    var blob = new Blob([this.response]);
+                                    var download_url = window.URL.createObjectURL(blob);
+                                    link.href = download_url;
+                                    link.download = attachment_name;
+                                    td.appendChild(link);
+                                    tr.appendChild(td);
+                                    attachments_container.children[0].children[0].appendChild(tr);
+                                } else {
+                                    console.log('Error: Error while retrieving file: ', this.statusText);
+                                }
+                            };
+                            xhr.onerror = function() {
+                                console.log('Error: Network error. Please check your network connection and try again.');
+                            };
+                            xhr.send();
+                        }
                     });
                     
-                    if (approvals.length < 1) {
-                        buttons_container.innerHTML = "There are no pending " + approval_type.toLowerCase() + "-deployment approvals for now.";
+                    var approval_to_be_updated = null;
+                    var approval_type = '';
+
+                    if (preDeployApprovals.length > 0) {
+                        preDeployApprovals.forEach(function(approval) {
+                            if (approval.approver.id === user_id) {
+                                approval_to_be_updated = approval;
+                                approval_type = 'Pre';
+                            }
+                        });
+                    } else if (postDeployApprovals.length > 0) {
+                        postDeployApprovals.forEach(function(approval) {
+                            if (approval.approver.id === user_id) {
+                                approval_to_be_updated = approval;
+                                approval_type = 'Post';
+                            }
+                        });
+                    } else {
+                        buttons_container.innerHTML = "There are no pending approvals to be approved by you for now.";
                         wait_control.endWait();
                         return;
                     }
-
-                    // Based on the approval type, retrieve the appropriate approvals 
-                    // to be approved / rejected.
-                    var approvals_from_release = (approval_type.toLowerCase() === "pre") ? release.environments[release_info.indexOfInterest].preDeployApprovals : release.environments[release_info.indexOfInterest].postDeployApprovals;
                     
-                    var approval_to_be_updated = null;
-
-                    for (var i = 0; i < approvals_from_release.length; i++) {
-                        var approval_from_release = approvals_from_release[i];
-                        for (var j = 0; j < approvals.length; j++) {
-                            var approval = approvals[j];
-                            if (approval.id === approval_from_release.id) {
-                                approval_to_be_updated = approval;
-                                break;
-                            }
-                        }
-                    }
-
                     // Create the "Approve" and "Reject" buttons
                     var approveBtn = document.createElement("button");
                         approveBtn.id = "approve";
@@ -266,9 +261,26 @@
                             approval_to_be_updated.approvedBy = user_id;
                             approval_to_be_updated.status = 'approved';
                             release_mgmt_client.updateReleaseApproval(approval_to_be_updated, project_id, approval_to_be_updated.id)
-                            .then(approval => {
+                            .then(function(approval) {
                                 if (approval && approval.id) {
-                                    alert(approval_type + "-Deploy Approval Operation: Success");
+                                    if (approval_type.toLowerCase() === "pre") {
+                                        work_item_track_services.WorkItemFormService.getService()
+                                        .then(function(service) {
+                                            return service.getId()
+                                        })
+                                        .then(function(work_item_id) {
+                                            return work_item_tracking_client.updateWorkItem([{
+                                                "op": "replace",
+                                                "path": "/fields/System.AssignedTo",
+                                                "value": `${release_info.user_info.displayName} <${release_info.user_info.uniqueName}>`
+                                            }], work_item_id, false, true, false);
+                                        })
+                                        .then(function() {
+                                            alert(approval_type + "-Deploy Approval Operation: Success");
+                                        });
+                                    } else {
+                                        alert(approval_type + "-Deploy Approval Operation: Success");
+                                    }
                                 } else {
                                     alert(approval_type + "-Deploy Approval Operation: Failure");
                                 }
@@ -287,7 +299,7 @@
                             approval_to_be_updated.approvedBy = user_id;
                             approval_to_be_updated.status = 'rejected';
                             release_mgmt_client.updateReleaseApproval(approval_to_be_updated, project_id, approval_to_be_updated.id)
-                            .then(approval => {
+                            .then(function(approval) {
                                 if (approval && approval.id) {
                                     alert(approval_type + "-Deploy Reject Operation: Success");
                                 } else {

@@ -12,7 +12,7 @@
     "version": {
         "Major": 2,
         "Minor": 8,
-        "Patch": 2
+        "Patch": 7
     },
     "runsOn": [
         "Agent"
@@ -69,7 +69,7 @@
             "name": "tool_name",
             "type": "string",
             "label": "Tool Name",
-            "defaultValue": "",
+            "defaultValue": "$(tool_name)",
             "required": true,
             "groupName": "artifactinfo",
             "helpMarkDown": "The name of the tool / code you are uploading."
@@ -78,7 +78,7 @@
             "name": "tool_version",
             "type": "string",
             "label": "Tool Version",
-            "defaultValue": "",
+            "defaultValue": "$(tool_version)",
             "required": true,
             "groupName": "artifactinfo",
             "helpMarkDown": "The version of the tool / code you are uploading."

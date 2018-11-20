@@ -63,6 +63,7 @@ try {
         // i.e. the user to whom the work items created 
         //      will be assigned to 
         const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true))[0];
+        console.log(`work_item_stakeholder: ${work_item_stakeholder}`);
         // Retrieve tool name and version, as configured by user
         const tool_name = task.getInput('tool_name', true);
         const tool_version = task.getInput('tool_version', true);
@@ -220,7 +221,26 @@ try {
         // option has been enabled.
         const approvers = [];
 
+        // Information needed to create and store in 
+        // the work items later.
+        const work_item_info = {
+            owner_info: {
+                displayName: '',
+                uniqueName: ''
+            },
+            user_info: {
+                displayName: '',
+                uniqueName: ''
+            },
+            release_id: '',
+            indexOfInterest: 0
+        };
+
         updated_release.environments[index_of_interest].preApprovalsSnapshot.approvals.forEach(approval => {
+            if (approval.approver.id === pre_primary_approvers[0]) {
+                work_item_info.owner_info.displayName = approval.approver.displayName;
+                work_item_info.owner_info.uniqueName = approval.approver.uniqueName;
+            }
             approvers.push({
                 info: approval.approver,
                 type: 'Pre'
@@ -228,36 +248,18 @@ try {
         });
 
         updated_release.environments[index_of_interest].postApprovalsSnapshot.approvals.forEach(approval => {
+            if (approval.approver.id === post_primary_approvers[0]) {
+                work_item_info.user_info.displayName = approval.approver.displayName;
+                work_item_info.user_info.uniqueName = approval.approver.uniqueName;
+            }
             approvers.push({
                 info: approval.approver,
                 type: 'Post'
             });
         });
 
-        // Information needed to store in and create 
-        // the work items later.
-        const work_item_info = {
-            owner_info: {
-                displayName: '',
-                uniqueName: ''
-            },
-            associated_context: {
-                release_id: '',
-                indexOfInterest: 0
-            }
-        };
-
-        // Store the information of the 
-        // work item "stakeholder"
-        approvers.forEach(approver => {
-            if (approver.info.id === work_item_stakeholder) {
-                work_item_info.owner_info.displayName = approver.info.displayName;
-                work_item_info.owner_info.uniqueName = approver.info.uniqueName;
-            }
-        });
-
-        work_item_info.associated_context.release_id = updated_release.id;
-        work_item_info.associated_context.indexOfInterest = index_of_interest;
+        work_item_info.release_id = updated_release.id;
+        work_item_info.indexOfInterest = index_of_interest;
 
         return Promise.all([
             work_item_info,
@@ -298,31 +300,16 @@ try {
         const [ work_item_info, approvers, work_item_tracking_api, ...attachments ] = results;
 
         const work_item_stakeholder_info = work_item_info.owner_info;
-
-        const pre_work_item_ops = [
+        
+        const work_item_ops = [
             {
                 "op": "add",
                 "path": "/fields/System.Title",
-                "value": `Pre-Approval for ${tool_name}, ${tool_version}`
+                "value": `Approval for ${tool_name}, ${tool_version}`
             }, {
                 "op": "add",
                 "path": "/fields/Associated Context",
-                "value": JSON.stringify(Object.assign({type: 'Pre'}, work_item_info.associated_context))
-            }, {
-                "op": "replace",
-                "path": "/fields/System.AssignedTo",
-                "value": `${work_item_stakeholder_info.displayName} <${work_item_stakeholder_info.uniqueName}>`
-            }
-        ];
-        const post_work_item_ops = [
-            {
-                "op": "add",
-                "path": "/fields/System.Title",
-                "value": `Post-Approval for ${tool_name}, ${tool_version}`
-            }, {
-                "op": "add",
-                "path": "/fields/Associated Context",
-                "value": JSON.stringify(Object.assign({type: 'Post'}, work_item_info.associated_context))
+                "value": JSON.stringify(work_item_info)
             }, {
                 "op": "replace",
                 "path": "/fields/System.AssignedTo",
@@ -342,20 +329,17 @@ try {
                     }
                 }
             };
-            pre_work_item_ops.push(op);
-            post_work_item_ops.push(op);
+            work_item_ops.push(op);
         });
 
         console.log(`[i] Create work items: Started`);
         return Promise.all([
             work_item_tracking_api.createWorkItem(
-                null, pre_work_item_ops, team_project_name, 'Feature', false, true, false),
-            work_item_tracking_api.createWorkItem(
-                null, post_work_item_ops, team_project_name, 'Feature', false, true, false),
+                null, work_item_ops, team_project_name, 'Feature', false, true, false),
             approvers
         ]); 
     }).then(results => {
-        const [ preWorkItem, postWorkItem, approvers ] = results;
+        const [ work_item, approvers ] = results;
 
         console.log(`[+] Create work items: Complete`);
         console.log();
@@ -380,10 +364,8 @@ try {
     
             const email_promises = [];
     
-            const pre_approval_link = preWorkItem._links.html.href;
-            const post_approval_link = postWorkItem._links.html.href;
+            const approval_link = work_item._links.html.href;
             approvers.forEach(approver => {
-                const approval_link = (approver.type === 'Pre') ? pre_approval_link : post_approval_link;
                 email_promises.push(server.sendMail({
                     from: smtp_username,
                     to: approver.info.uniqueName,
