@@ -58,12 +58,7 @@ try {
             smtp_password = task.getInput('smtp_password', true);
             smtp_verbose = task.getBoolInput('smtp_verbose', true);
         }
-
-        // Retrieve the work item "stakeholder"
-        // i.e. the user to whom the work items created 
-        //      will be assigned to 
-        const work_item_stakeholder = JSON.parse(task.getInput('work_item_stakeholder', true))[0];
-        console.log(`work_item_stakeholder: ${work_item_stakeholder}`);
+        
         // Retrieve tool name and version, as configured by user
         const tool_name = task.getInput('tool_name', true);
         const tool_version = task.getInput('tool_version', true);

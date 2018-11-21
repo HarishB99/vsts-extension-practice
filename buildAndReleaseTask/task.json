@@ -12,7 +12,7 @@
     "version": {
         "Major": 2,
         "Minor": 8,
-        "Patch": 7
+        "Patch": 9
     },
     "runsOn": [
         "Agent"
@@ -56,15 +56,6 @@
         }
     ],
     "inputs": [
-        {
-            "name": "work_item_stakeholder",
-            "type": "identities",
-            "label": "Work Item To Be Assigned To User",
-            "defaultValue": "",
-            "required": true,
-            "groupName": "workitem",
-            "helpMarkDown": "A user (NOT GROUP) who is also one of the approvers."
-        },
         {
             "name": "tool_name",
             "type": "string",

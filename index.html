@@ -107,7 +107,7 @@
                                                             }
                                                         }], work_item_id, false, true, false);
                                                     })
-                                                    .then(() => {
+                                                    .then(function() {
                                                         dialog.close();
                                                         location.reload();
                                                     });
@@ -171,7 +171,8 @@
                         release_info,
                         release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], 'preDeploy'),
                         release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], 'postDeploy'),
-                        work_item_tracking_client.getWorkItem(work_item_id, null, null, 'relations')
+                        work_item_tracking_client.getWorkItem(work_item_id, null, null, 'relations'),
+                        work_item_id
                     ]);
                 })
                 .then(function(results) {
@@ -182,6 +183,7 @@
                     var preDeployApprovals = results[1];
                     var postDeployApprovals = results[2];
                     var relations = results[3].relations;
+                    var work_item_id = results[4];
 
                     // Retrieve the approval type and attachments 
                     // from the JSON data
@@ -264,30 +266,35 @@
                             .then(function(approval) {
                                 if (approval && approval.id) {
                                     if (approval_type.toLowerCase() === "pre") {
-                                        work_item_track_services.WorkItemFormService.getService()
-                                        .then(function(service) {
-                                            return service.getId()
-                                        })
-                                        .then(function(work_item_id) {
-                                            return work_item_tracking_client.updateWorkItem([{
-                                                "op": "replace",
-                                                "path": "/fields/System.AssignedTo",
-                                                "value": `${release_info.user_info.displayName} <${release_info.user_info.uniqueName}>`
-                                            }], work_item_id, false, true, false);
-                                        })
-                                        .then(function() {
-                                            alert(approval_type + "-Deploy Approval Operation: Success");
-                                        });
+                                        return work_item_tracking_client.updateWorkItem([{
+                                            "op": "replace",
+                                            "path": "/fields/System.AssignedTo",
+                                            "value": `${release_info.user_info.displayName} <${release_info.user_info.uniqueName}>`
+                                        }], work_item_id, false, true, false);
+                                        // .then(function() {
+                                        //     alert(approval_type + "-Deploy Approval Operation: Success");
+                                        // });
                                     } else {
                                         alert(approval_type + "-Deploy Approval Operation: Success");
                                     }
                                 } else {
                                     alert(approval_type + "-Deploy Approval Operation: Failure");
                                 }
-                                location.reload();
-                            }, error => {
+                                return location.reload();
+                            }, function(error) {
                                 console.log('Error while trying to update approval: ', error);
                                 alert('Please refresh the artifacts section or the browser and try again.');
+                                return location.reload();
+                            }).then(function(work_item) {
+                                console.log('Updated Work Item: ', work_item);
+                                if (work_item) {
+                                    alert(approval_type + "-Deploy Approval Operation: Success");
+                                    location.reload();
+                                }
+                            }, function(error) {
+                                console.log('Error while trying to update work item: ', error);
+                                alert('Unable to update work item.');
+                                location.reload();
                             });
                         });
                     var rejectBtn = document.createElement("button");
@@ -306,7 +313,7 @@
                                     alert(approval_type + "-Deploy Reject Operation: Failure");
                                 }
                                 location.reload();
-                            }, error => {
+                            }, function(error) {
                                 console.log('Error while trying to update approval: ', error);
                                 alert('Please refresh the artifacts section or the browser and try again.');
                             });
