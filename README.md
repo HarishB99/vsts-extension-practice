@@ -5,6 +5,8 @@
 
 At the root of this directory,
 
+* Run `npm install` to install all the required npm packages listed in `package.json`
+
 * Run `npm run build` to build the .vsix extension file at the root of this directory
 
 * Refer to [this section](https://docs.microsoft.com/en-us/azure/devops/marketplace/get-tfs-extensions?view=tfs-2018#install-extensions-for-disconnected-tfs) of the Microsoft website for documentation on how to install extensions for disconnected TFS.
