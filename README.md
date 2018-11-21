@@ -28,3 +28,5 @@ As it can be seen from above, to use the extension, at least __TWO__ stages are 
 __Secondly__, the account named `Project Collection Build Service (<ORGANISATION_NAME>)` must be granted several permissions at different levels so as to allow the extension to perform its expected functions.
 
 * To learn more about permissions in TFS, [click here](https://docs.microsoft.com/en-us/azure/devops/organizations/security/about-permissions?view=tfs-2018).
+
+![Editing Work Item UI](/docs/work_item_ui.gif)
