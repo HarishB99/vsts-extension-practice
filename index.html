@@ -18,6 +18,7 @@
                 build_api, Controls, StatusIndicator, 
                 work_item_tracking_api, Menus, Dialogs) {
 
+                // the file size limit
                 const SIXTY_MB = 60 * 1024 * 1024;
                 console.log('Web context: ', VSS.getWebContext());
                 
@@ -51,21 +52,38 @@
                                 location.reload();
                                 break;
                             case "new-file":
+                                // A File chooser
                                 var input_container = document.createElement("div");
                                 var input = document.createElement("input");
                                 input.type = "file";
                                 input.id = "file";
                                 input_container.appendChild(input);
+                                
+                                // Show the VSTS dialog to display the 
+                                // File chooser and an upload button.
+                                // 
+                                // Unable to implement a "Cancel" feature 
+                                // at the moment
                                 var dialog = Dialogs.show(Dialogs.ModalDialog, {
                                     title: "Upload Attachment",
                                     content: input_container.outerHTML,
                                     buttons: {
                                         "Upload": function() {
+                                            // Retrieve the chosen file
                                             var file = document.getElementById("file").files[0];
+
+                                            // Proceed with file upload if a file is chosen
                                             if (file) {
                                                 var reader = new FileReader();
                                                 reader.readAsArrayBuffer(file);
                                                 reader.onload = function(e) {
+                                                    // If file exceeds size limit, 
+                                                    // alert user and exit
+                                                    //
+                                                    // NOTE: If file exceeds 100 MB, 
+                                                    // FileReader API will crash. This 
+                                                    // issue has not been solved due to 
+                                                    // time constraint
                                                     if (file.size > SIXTY_MB) {
                                                         console.log(e.target.result);
                                                         alert("Upload not allowed.\n\n" + 
@@ -76,6 +94,9 @@
                                                         dialog.close();
                                                         return;
                                                     }
+
+                                                    // All good. Proceed to upload file as 
+                                                    // attachment to work item.
                                                     work_item_tracking_client.createAttachment(e.target.result, file.name)
                                                     .then(function(attachment) {
                                                         console.log('Attachment: ', attachment);
@@ -146,7 +167,8 @@
                 // Get the work item service for the current work item
                 work_item_track_services.WorkItemFormService.getService()
                 .then(function(service) {
-                    // Retrieve the "associated context" fields of the current work item
+                    // Retrieve the "associated context" field 
+                    // and the id of the current work item
                     return Promise.all([
                         service.getFieldValue("Associated Context"),
                         service.getId()
@@ -162,11 +184,9 @@
                     var work_item_id = results[1];
 
                     // Using the release id in the JSON data, 
-                    // retrieve the release for which an approval / rejection 
+                    // retrieve the pending approvals for the 
+                    // release for which an approval / rejection 
                     // is to be made
-                    //
-                    // Hence, transfer the JSON data and the release to the next 
-                    // Promise chain
                     return Promise.all([
                         release_info,
                         release_mgmt_client.getApprovals(project_id, null, null, [release_info.release_id], 'preDeploy'),
@@ -176,18 +196,20 @@
                     ]);
                 })
                 .then(function(results) {
-                    // Store the JSON data and release object 
+                    // Store the JSON data and approval objects 
                     // from the previous Promise chain 
                     // into the following variables
                     var release_info = results[0];
                     var preDeployApprovals = results[1];
                     var postDeployApprovals = results[2];
-                    var relations = results[3].relations;
-                    var work_item_id = results[4];
 
-                    // Retrieve the approval type and attachments 
-                    // from the JSON data
-                    // var approval_type = release_info.type;
+                    // Relations refer to all work item relations.
+                    // This is needed to access the attached files.
+                    var relations = results[3].relations;
+
+                    // Work Item id is required so as to change the 
+                    // "Assigned To" field later
+                    var work_item_id = results[4];
 
                     console.log('Pre-Deploy Approvals: ', preDeployApprovals);
                     console.log('Post-Deploy Approvals: ', postDeployApprovals);
@@ -230,6 +252,8 @@
                         }
                     });
                     
+                    // Get the approval object for 
+                    // the current user to update
                     var approval_to_be_updated = null;
                     var approval_type = '';
 
@@ -326,6 +350,9 @@
 
                     // The DOM has been set up and the UI is ready to be presented 
                     // to the user. Stop the loading screen.
+                    //
+                    // Note: The table will still be loading as the HTTP requests 
+                    // are performed in the background using XMLHttpReqest
                     wait_control.endWait();
                 });
             });

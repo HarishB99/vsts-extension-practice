@@ -15,6 +15,14 @@ try {
         const release_environment_name = task.getVariable('release.environmentname');
 
         // Retrieve user inputs
+        const pre_enabled = task.getBoolInput('pre_enabled', true);
+        const post_enabled = task.getBoolInput('post_enabled', true);
+        const smtp_enabled = task.getBoolInput('smtp_enabled', true);
+        
+        // Retrieve tool name and version, as configured by user
+        const tool_name = task.getInput('tool_name', true);
+        const tool_version = task.getInput('tool_version', true);
+
         let pre_primary_approvers = null;
         let pre_secondary_approvers = null;
         let pre_approval_timeout = null;
@@ -28,10 +36,6 @@ try {
         let smtp_username = null;
         let smtp_password = null;
         let smtp_verbose = null;
-        
-        const pre_enabled = task.getBoolInput('pre_enabled', true);
-        const post_enabled = task.getBoolInput('post_enabled', true);
-        const smtp_enabled = task.getBoolInput('smtp_enabled', true);
 
         // If pre-deployment approval is enabled, 
         // retrieve all user inputs related for this operation.
@@ -58,10 +62,6 @@ try {
             smtp_password = task.getInput('smtp_password', true);
             smtp_verbose = task.getBoolInput('smtp_verbose', true);
         }
-        
-        // Retrieve tool name and version, as configured by user
-        const tool_name = task.getInput('tool_name', true);
-        const tool_version = task.getInput('tool_version', true);
     console.log('[+] Initialising task: Complete');
     console.log();
 
@@ -92,13 +92,16 @@ try {
         const [ release, release_api ] = results;
         
         // index_of_interest keeps track of the 
-        // release stage for which the release task 
-        // will be configure the approvals
+        // index of the release stage for which 
+        // the release task will configure the approvals
+        // 
+        // The Stages are referred to by release.environments
         //
         // i.e. The next Stage
         // e.g. If you are running this task in Stage 1,
         //      the task itself will configure approvals 
-        //      for Stage 2.
+        //      for Stage 2. Look at the documentation for 
+        //      this extension for more information.
         let index_of_interest = 0;
         for (let i = 0; i < release.environments.length; i++) {
             const environment = release.environments[i];
@@ -111,6 +114,8 @@ try {
         // If pre-deployment approval is enabled, 
         // configure pre-deployment approvals.
         if (pre_enabled) {
+            // Configure the pre-approval snapshot of the 
+            // Stage of interest
             release.environments[index_of_interest].preApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: pre_approval_timeout,
                 releaseCreatorCanBeApprover: true,
@@ -147,6 +152,8 @@ try {
         // If post-deployment approval is enabled, 
         // configure post-deployment approvals.
         if (post_enabled) {
+            // Configure the post-approval snapshot of the 
+            // Stage of interest
             release.environments[index_of_interest].postApprovalsSnapshot.approvalOptions = {
                 timeoutInMinutes: post_approval_timeout,
                 releaseCreatorCanBeApprover: true,
@@ -180,7 +187,7 @@ try {
             release.environments[index_of_interest].postApprovalsSnapshot.approvals = postApprovalsArray;
         }
 
-        // The release object has been configured.
+        // The Stage in the release object has been configured.
         // Now it is time to send this configured object to the api 
         // to publish the changes.
         console.log('[i] Update approvals using release info retrieved: Started');
@@ -194,8 +201,8 @@ try {
         console.log();
 
         // Once again, index_of_interest keeps track of the 
-        // release stage for which the release task 
-        // will be configure the approvals
+        // index of the release stage for which 
+        // the release task will configure the approvals
         //
         // i.e. The next Stage
         // e.g. If you are running this task in Stage 1,
@@ -218,6 +225,11 @@ try {
 
         // Information needed to create and store in 
         // the work items later.
+        // 
+        // This entire object will be stringified 
+        // using JSON.stringify and then stored in 
+        // the "Associated Context" field of the Work 
+        // Item.
         const work_item_info = {
             owner_info: {
                 displayName: '',
@@ -272,6 +284,10 @@ try {
             connection.getWorkItemTrackingApi()
         ];
 
+        // For each artifact in the build (the same as each artifact that will be released)
+        // get the content of the artifact (NodeJS.ReadableStream)
+        //
+        // This will later be uploaded as attachment to the work item created.
         artifacts.forEach(artifact => {
             promise_values.push(build_api.getArtifactContentZip(build_id, artifact.name, team_project_name));
         });
@@ -286,6 +302,11 @@ try {
             connection.getWorkItemTrackingApi()
         ];
         
+        // Create the attachment using the content of the artifacts 
+        // sent from the previous chain in the Promise.
+        // 
+        // These files will be linked to the work items, thus being 
+        // "uploaded" to the work item.
         artifacts.forEach((artifact, i) => {
             promise_values.push(work_item_tracking_api.createAttachment(null, artifact_zips[i], `${artifact.name}.zip`));
         });
@@ -294,6 +315,8 @@ try {
     }).then(results => {
         const [ work_item_info, approvers, work_item_tracking_api, ...attachments ] = results;
 
+        // With all the necessary information retrieved, create 
+        // the wok item
         const work_item_stakeholder_info = work_item_info.owner_info;
         
         const work_item_ops = [
@@ -339,6 +362,13 @@ try {
         console.log(`[+] Create work items: Complete`);
         console.log();
         console.log(`[i] Send emails: Started`);
+
+        // If the user has enabled the SMTP option, 
+        // send emails to the approvers
+        //
+        // At the moment, approvers might receive the email 
+        // twice or more, depending on the way the primary 
+        // and secondary approvers are configured.
         if (smtp_enabled) {
             const transportOptions = {
                 host: smtp_host,
@@ -387,11 +417,13 @@ try {
     }).then(() => {
         console.log(`[+] Executing task: Complete`);
     }).catch(error => {
+        // An error occurred within the Promise chain
         console.log();
         console.log('[-] Promise rejected');
         console.log(`Reason: ${error}`);
     });
 } catch (error) {
+    // Most probably an "unknown" error occurred
     console.log();
     console.log('[-] Executing task: Failure');
     console.log(`Reason: ${error}`);
