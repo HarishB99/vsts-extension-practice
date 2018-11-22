@@ -25,8 +25,62 @@ In other words, assuming we have __two__ stages in the pipeline, namely `Stage-1
 
 As it can be seen from above, to use the extension, at least __TWO__ stages are required, with the release task packaged in the extension added to one of the agent jobs running in the __FIRST__ stage, allowing this release task to configure approvals for the second stage.
 
-__Secondly__, the account named `Project Collection Build Service (<ORGANISATION_NAME>)` must be granted several permissions at different levels so as to allow the extension to perform its expected functions.
+__Secondly__, the account named `Project Collection Build Service (<ORGANISATION_NAME>)` must be granted several permissions to allow the extension to perform its expected functions.
+
+> __** NOTE__: `<ORGANISATION_NAME>` refers to the name of the TFS organization that is making use of the extension.
+
+* At the project level, the `Bypass rules on work item updates` permission needs to be granted to the abovementioned account.
+
+  1. Navigate to the `Settings` hub in your project.
+
+  2. Click on `Security`
+
+  ![Navigate to Project Settings, and then Security](/docs/Project%20Settings%20-%20Navigate%20to%20Security%20(2).jpg)
+
+  3. Next, search for `Project Collection Build Service` and then click on the abovementioned account name.
+
+  4. Make sure the permission `Bypass rules on work item updates` is allowed.
+
+  ![Grant "Bypass Rules on work item updates" permission to "Project Collection Build Service (<ORGANISATION_NAME>)"](/docs/project_settings.gif)
+
+* The `Manage release approvers` permission needs to be granted to the abovementioned account so that the release task packaged with the extension can configure the approvals as mentioned in the previous section.
+
+  1. Navigate to the `Releases` hub in your project
+
+  2. Click on the ellipsis icon `...` in the right window
+  
+  3. Click on `Security` in the context menu that appears.
+
+  ![Navigate to Releases, and then Security](/docs/Release%20pipeline%20-%20Navigate%20to%20Security%20(2).jpg)
+
+  4. Click on `Project Collection Build Service (<ORGANISATION_NAME>)` account
+
+  > __** NOTE__: If you are unable to find the account name, click on the `+ Add` button at the top to find and add the account to this `Permissions` page.
+
+  5. Make sure the permission `Manage release approvers` is allowed.
+  
+  ![Grant "Manage release approvers" permission to "Project Collection Build Service (<ORGANISATION_NAME>)"](/docs/Release%20pipeline%20-%20Grant%20Permissions%20(2).jpg)
 
 * To learn more about permissions in TFS, [click here](https://docs.microsoft.com/en-us/azure/devops/organizations/security/about-permissions?view=tfs-2018).
 
-![Editing Work Item UI](/docs/work_item_ui.gif)
+__Finally__, and this is optional, the Work Item Section named `Artifacts`, which will be created by the extension, appears at the bottom of the Work Item Form by default. If you wish to configure it to appear at the top of the `Description` section instead, you can perform the following:
+
+  * Navigate to the `Work Items` hub in your project
+
+  * Click on `+ New Work Item`
+
+  * Click on `Feature` (though clicking on any of the Work Item types should work, as the extension creates a Feature Work Item, it is safer to configure this type.)
+
+    ![Create New Feature Work Item](/docs/Work%20Item%20-%20New%20Feature%20(2).jpg)
+  
+  * Click on the ellipsis icon `...` in the right window
+
+  * Click on `Customize` in the context menu that appears
+
+  * Click on `Leave` in the pop-up that appears
+
+  * Scroll to the bottom of the `Layout` tab
+
+  * Drag the `Artifacts` section to the top of the `Description` section
+
+    ![Editing Work Item UI](/docs/work_item_ui.gif)
