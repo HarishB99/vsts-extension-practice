@@ -35,7 +35,7 @@ __Secondly__, the account named `Project Collection Build Service (<ORGANISATION
 
   2. Click on `Security`
 
-  ![Navigate to Project Settings, and then Security](/docs/Project_Settings_-_Navigate_to_Security_(2).jpg)
+  ![Navigate to Project Settings, and then Security](/docs/Project_Settings_-_Navigate_to_Security_(2).JPG)
 
   3. Next, search for `Project Collection Build Service` and then click on the abovementioned account name.
 
@@ -51,7 +51,7 @@ __Secondly__, the account named `Project Collection Build Service (<ORGANISATION
   
   3. Click on `Security` in the context menu that appears.
 
-  ![Navigate to Releases, and then Security](/docs/Release_pipeline_-_Navigate_to_Security_(2).jpg)
+  ![Navigate to Releases, and then Security](/docs/Release_pipeline_-_Navigate_to_Security_(2).JPG)
 
   4. Click on `Project Collection Build Service (<ORGANISATION_NAME>)` account
 
@@ -59,7 +59,7 @@ __Secondly__, the account named `Project Collection Build Service (<ORGANISATION
 
   5. Make sure the permission `Manage release approvers` is allowed.
   
-  ![Grant "Manage release approvers" permission to "Project Collection Build Service (<ORGANISATION_NAME>)"](/docs/Release_pipeline_-_Grant_Permissions_(2).jpg)
+  ![Grant "Manage release approvers" permission to "Project Collection Build Service (<ORGANISATION_NAME>)"](/docs/Release_pipeline_-_Grant_Permissions_(2).JPG)
 
 * To learn more about permissions in TFS, [click here](https://docs.microsoft.com/en-us/azure/devops/organizations/security/about-permissions?view=tfs-2018).
 
@@ -71,7 +71,7 @@ __Finally__, and this is optional, the Work Item Section named `Artifacts`, whic
 
   * Click on `Feature` (though clicking on any of the Work Item types should work, as the extension creates a Feature Work Item, it is safer to configure this type.)
 
-    ![Create New Feature Work Item](/docs/Work_Item_-_New_Feature_(2).jpg)
+    ![Create New Feature Work Item](/docs/Work_Item_-_New_Feature_(2).JPG)
   
   * Click on the ellipsis icon `...` in the right window
 
