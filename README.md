@@ -35,7 +35,7 @@ __Secondly__, the account named `Project Collection Build Service (<ORGANISATION
 
   2. Click on `Security`
 
-  ![Navigate to Project Settings, and then Security](/docs/Project%20Settings%20-%20Navigate%20to%20Security%20(2).jpg)
+  ![Navigate to Project Settings, and then Security](/docs/Project Settings - Navigate to Security (2).jpg)
 
   3. Next, search for `Project Collection Build Service` and then click on the abovementioned account name.
 
