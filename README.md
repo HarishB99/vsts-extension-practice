@@ -3,9 +3,13 @@
 
 ## Install the extension
 
-At the root of this directory,
+Firstly, change the current working directory to `buildAndReleaseTask`.
 
-* Run `npm install` to install all the required npm packages listed in `package.json`
+* Run `npm install` to install all the required npm packages listed in `/buildAndReleaseTask/package.json`
+
+Next, at the root of this directory,
+
+* Run `npm install` to install all the required npm packages listed in `/package.json`
 
 * Run `npm run build` to build the .vsix extension file at the root of this directory
 
